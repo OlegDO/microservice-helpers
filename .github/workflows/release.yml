@@ -29,17 +29,15 @@ jobs:
           path: coverage
 
       - name: Build
-        run: npm run build
+        run: |
+          npm set-script prepare ""
+          npm run build
 
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm set-script prepare ""
-          rm -rf .husky
-          cat package.json
-          npx semantic-release
+        run: npx semantic-release
 
   sonarcube:
     name: Sonarcube
