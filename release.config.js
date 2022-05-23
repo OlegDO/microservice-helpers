@@ -10,7 +10,9 @@ module.exports = {
   plugins: [
     '@semantic-release/commit-analyzer',
     '@semantic-release/release-notes-generator',
-    '@semantic-release/npm',
+    ['@semantic-release/npm', {
+      pkgRoot: './lib'
+    }],
     '@semantic-release/github',
   ]
 }
