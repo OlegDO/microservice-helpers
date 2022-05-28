@@ -22,6 +22,8 @@ export * from '@services/microservice-meta';
 
 export { default as Log } from '@services/log';
 
+export type { ILokiTransportOptions } from '@services/log';
+
 export { default as RemoteConfig } from '@services/remote-config';
 
 export * from '@entities/ijson-query-filter';

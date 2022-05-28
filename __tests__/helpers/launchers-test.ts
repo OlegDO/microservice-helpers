@@ -13,6 +13,7 @@ import type {
   startWithDb as OriginalStartWithDb,
 } from '@helpers/launchers';
 import { TypeormMock } from '@mocks/index';
+import Log from '@services/log';
 import RemoteConfig from '@services/remote-config';
 import waitResult from '@test-helpers/wait-result';
 
@@ -166,5 +167,40 @@ describe('authentication', () => {
     });
 
     expect(await waitResult(res)).to.throw();
+  });
+
+  it('should correctly start microservice with winston loki transport: options from environment', async () => {
+    sandbox.stub(Microservice.getInstance(), 'start').resolves();
+
+    const enableLokiStub = sandbox.stub(Log, 'enableLokiTransport');
+
+    await start({
+      type: 'microservice',
+      msOptions,
+      msParams,
+      logGrafana: { host: 'http://demo.host' },
+      remoteMiddleware: { isEnable: false, type: 'client' },
+      remoteConfig: { isEnable: false },
+    });
+
+    expect(enableLokiStub).to.calledOnce;
+  });
+
+  it('should correctly start microservice with winston loki transport: options from remote config', async () => {
+    sandbox.stub(Microservice.getInstance(), 'start').resolves();
+    sandbox.stub(RemoteConfig, 'get').resolves();
+
+    const enableLokiStub = sandbox.stub(Log, 'enableLokiTransport');
+
+    await start({
+      type: 'microservice',
+      msOptions,
+      msParams,
+      logGrafana: true,
+      remoteMiddleware: { isEnable: false, type: 'client' },
+      remoteConfig: { isEnable: false },
+    });
+
+    expect(enableLokiStub).to.calledOnce;
   });
 });

@@ -34,6 +34,9 @@ export default {
     'class-validator-jsonschema',
     '@lomray/typeorm-json-query',
     'typeorm/query-builder/SelectQueryBuilder',
+    'winston-loki',
+    'klona/full',
+    'traverse',
   ],
   plugins: [
     peerDepsExternal(),

@@ -13,6 +13,7 @@ import {
 import type { ConnectionOptions } from 'typeorm';
 import CreateDbConnection from '@helpers/create-db-connection';
 import Log from '@services/log';
+import type { ILokiTransportOptions } from '@services/log';
 import RemoteConfig from '@services/remote-config';
 
 type TRemoteMiddleware = { isEnable?: boolean } & (
@@ -27,6 +28,7 @@ export interface IStartConfig {
   registerMethods?: (ms: Microservice | Gateway) => Promise<void> | void;
   remoteMiddleware?: TRemoteMiddleware;
   remoteConfig?: { isEnable?: boolean; msConfigName?: string };
+  logGrafana?: ILokiTransportOptions | boolean;
   hooks?: {
     afterCreateMicroservice?: (ms: Microservice | Gateway) => Promise<void> | void;
     afterInitRemoteMiddleware?: () => Promise<void> | void;
@@ -50,6 +52,7 @@ const start = async ({
   registerMethods,
   remoteMiddleware,
   remoteConfig,
+  logGrafana,
   hooks: { afterCreateMicroservice, afterInitRemoteMiddleware, beforeStart } = {},
 }: IStartConfig): Promise<void> => {
   try {
@@ -68,6 +71,20 @@ const start = async ({
         msName: msOptions.name as string,
         msConfigName: remoteConfig?.msConfigName || 'configuration',
       });
+    }
+
+    // Enable grafana loki transport
+    if (logGrafana) {
+      // Get options from environment or remote config
+      const config =
+        typeof logGrafana !== 'boolean'
+          ? logGrafana
+          : await RemoteConfig.get<ILokiTransportOptions>('grafana-loki', {
+              isThrowNotExist: true,
+              isCommon: true,
+            });
+
+      Log.enableLokiTransport(config);
     }
 
     await afterCreateMicroservice?.(microservice);
