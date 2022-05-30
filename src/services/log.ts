@@ -73,17 +73,19 @@ Log.enableLokiTransport = (options: ILokiTransportOptions) => {
     return info;
   });
 
+  const { labels = [], ...otherOptions } = options;
+
   Log.add(
     new LokiTransport({
       json: true,
       replaceTimestamp: true,
-      labels: { microservice: Log.defaultMeta.service },
+      labels: { microservice: Log.defaultMeta.service, ...labels },
       format: format.combine(
         secretsFormatter(),
         lokiFormat(),
         format.printf((info) => info.message),
       ),
-      ...options,
+      ...otherOptions,
     }),
   );
 };
