@@ -73,7 +73,7 @@ Log.enableLokiTransport = (options: ILokiTransportOptions) => {
     return info;
   });
 
-  const { labels = [], ...otherOptions } = options;
+  const { labels = {}, ...otherOptions } = options;
 
   Log.add(
     new LokiTransport({
