@@ -591,7 +591,7 @@ const viewDefaultHandler = async <TEntity>(
     });
   }
 
-  const targets = await query.limit(2).getMany();
+  const targets = await query.take(2).getMany();
 
   // catch attempting view multiple entities or nothing
   if (targets.length > 1) {
