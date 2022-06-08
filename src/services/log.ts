@@ -54,7 +54,7 @@ Log.enableLokiTransport = (options: ILokiTransportOptions) => {
         internal = body.params?.payload?.isInternal;
         error = reqType === 'response' ? Boolean(body.error) : undefined;
       } catch (e) {
-        // ignore
+        body = { unparsedMsg: message };
       }
 
       return {
