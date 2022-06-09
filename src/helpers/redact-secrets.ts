@@ -12,6 +12,9 @@ const sensitiveKeys = [
   /session[-._]?id/i,
   /^connect\.sid$/,
   /private[-._]?key/i,
+  /(access([a-z0-9]+)?)/i,
+  /(refresh([a-z0-9]+)?)/i,
+  /(private([a-z0-9]+)?)/i,
   /^\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}$/, // credit card number
 ];
 
@@ -25,6 +28,9 @@ const sensitiveValues = [
   /"(api[-._]?key)":"[^"]+"/i,
   /"(session[-._]?id)":"[^"]+"/i,
   /"(private[-._]?key)":"[^"]+"/i,
+  /"(access([a-z0-9]+)?)":"[^"]+"/i,
+  /"(refresh([a-z0-9]+)?)":"[^"]+"/i,
+  /"(private([a-z0-9]+)?)":"[^"]+"/i,
   /"([^"]+)":"\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}"/,
 ];
 
