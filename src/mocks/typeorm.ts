@@ -35,6 +35,7 @@ class EntityManagerMock extends EntityManager {
     this.softRemove = sandbox.stub().resolves({});
     this.softDelete = sandbox.stub().resolves({ affected: 0, generatedMaps: [] });
     this.upsert = sandbox.stub().resolves({ identifiers: [], generatedMaps: [] });
+    this.query = sandbox.stub().resolves();
 
     this.transaction = (...args: any) => args?.[1]?.(this) ?? args?.[0](this);
     this.getRepository = sandbox.stub().callsFake((repo) => super.getRepository(repo));
