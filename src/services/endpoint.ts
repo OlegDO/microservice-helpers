@@ -20,10 +20,10 @@ enum CRUD_EXCEPTION_CODE {
   ENTITY_NOT_FOUND = -33487,
 }
 
+type Constructable<TParams = any> = new (...args: any[]) => TParams;
+
 type EntityTarget<TEntity> =
-  | {
-      new (...args: any[]): TEntity;
-    }
+  | Constructable<TEntity>
   | string
   | {
       type: TEntity;
@@ -413,8 +413,8 @@ interface IControllerReturn<TEntity> {
 }
 
 interface IEndpointMeta<TInput = ObjectLiteral, TOutput = ObjectLiteral> {
-  input?: ICrudParams<any, TInput, TOutput>['input'];
-  output?: ICrudParams<any, TInput, TOutput>['output'];
+  input?: string | ICrudParams<any, TInput, TOutput>['input'];
+  output?: string | ICrudParams<any, TInput, TOutput>['output'];
   description?: EndpointDescription;
 }
 
@@ -426,8 +426,8 @@ interface IEndpointMetaDefault<TInput = ObjectLiteral, TOutput = ObjectLiteral> 
 
 export interface IWithEndpointMeta {
   getMeta: () => {
-    input: [string | undefined, ObjectLiteral | undefined];
-    output: [string | undefined, ObjectLiteral | undefined];
+    input: [string | undefined, ObjectLiteral | undefined | null];
+    output: [string | undefined, ObjectLiteral | undefined | null];
     description?: string;
   };
 }
@@ -1312,7 +1312,7 @@ class Endpoint {
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, queryOptions);
 
       if (typeof input === 'function') {
-        const errors = await validate(Object.assign(new input(), params), {
+        const errors = await validate(Object.assign(new (input as Constructable)(), params), {
           whitelist: true,
           validationError: { target: false },
         });
@@ -1347,7 +1347,7 @@ class Endpoint {
       const { input } = customOptions();
 
       if (typeof input === 'function') {
-        const errors = await validate(Object.assign(new input(), params), {
+        const errors = await validate(Object.assign(new (input as Constructable)(), params), {
           whitelist: true,
           validationError: { target: false },
         });
