@@ -26,6 +26,7 @@ export interface IStartConfig {
   msOptions: Partial<IGatewayOptions | IMicroserviceOptions>;
   msParams: Partial<IGatewayParams> | IMicroserviceParams;
   registerMethods?: (ms: Microservice | Gateway) => Promise<void> | void;
+  registerEvents?: (ms: Microservice | Gateway) => Promise<void> | void;
   remoteMiddleware?: TRemoteMiddleware;
   remoteConfig?: { isEnable?: boolean; msConfigName?: string };
   logGrafana?: ILokiTransportOptions | boolean;
@@ -50,6 +51,7 @@ const start = async ({
   msOptions,
   msParams,
   registerMethods,
+  registerEvents,
   remoteMiddleware,
   remoteConfig,
   logGrafana,
@@ -89,6 +91,7 @@ const start = async ({
 
     await afterCreateMicroservice?.(microservice);
     await registerMethods?.(microservice);
+    await registerEvents?.(microservice);
 
     // Enable remote middleware (enabled by default)
     if (remoteMiddleware?.isEnable ?? true) {

@@ -42,6 +42,7 @@ describe('authentication', () => {
   it('should correctly start microservice with db connection', async () => {
     const spyCreate = sandbox.spy(Microservice, 'create');
     const registerMethodsStub = sandbox.stub();
+    const registerEventsStub = sandbox.stub();
     const beforeStartStub = sandbox.stub();
     const initRemoteMiddlewareStub = sandbox.stub();
     let stubbedStart;
@@ -75,6 +76,7 @@ describe('authentication', () => {
         beforeStart: beforeStartStub,
       },
       registerMethods: registerMethodsStub,
+      registerEvents: registerEventsStub,
     });
 
     const [createOptions, createParams] = spyCreate.firstCall.args;
@@ -92,6 +94,7 @@ describe('authentication', () => {
       msConfigName: 'configuration',
     });
     expect(registerMethodsStub).to.calledOnceWith(Microservice.getInstance());
+    expect(registerEventsStub).to.calledOnceWith(Microservice.getInstance());
   });
 
   it('should correctly start gateway', async () => {
@@ -178,7 +181,7 @@ describe('authentication', () => {
       type: 'microservice',
       msOptions,
       msParams,
-      logGrafana: { host: 'http://demo.host' },
+      logGrafana: { host: 'https://demo.host' },
       remoteMiddleware: { isEnable: false, type: 'client' },
       remoteConfig: { isEnable: false },
     });
