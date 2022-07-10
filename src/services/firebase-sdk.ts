@@ -1,4 +1,5 @@
 import FirebaseAdmin from 'firebase-admin';
+import type { ServiceAccount } from 'firebase-admin/lib/app/credential';
 import RemoteConfig from '@services/remote-config';
 
 export interface IFirebaseSdkParams {
@@ -48,11 +49,16 @@ class FirebaseSdk {
   public static async get(): Promise<TFirebaseAdmin> {
     if (!this.hasInit) {
       const config = this.hasConfigMs
-        ? await RemoteConfig.get('firebase', { isThrowNotExist: true, isCommon: true })
+        ? await RemoteConfig.get<{ credential?: ServiceAccount }>('firebase', {
+            isThrowNotExist: true,
+            isCommon: true,
+          })
         : {};
 
+      const credentials = config?.credential ?? (this.credential as ServiceAccount);
+
       FirebaseAdmin.initializeApp({
-        credential: FirebaseAdmin.credential.cert(config?.credential ?? this.credential),
+        credential: FirebaseAdmin.credential.cert(credentials),
       });
 
       this.hasInit = true;

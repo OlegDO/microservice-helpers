@@ -1,5 +1,5 @@
-import type { IJsonQuery, IJsonQueryWhere, ObjectLiteral } from '@lomray/typeorm-json-query';
-import { IJsonQueryOrder, IJsonQueryOrderField } from '@lomray/typeorm-json-query';
+import type { IJsonQuery, IJsonQueryWhere, ObjectLiteral } from '@lomray/microservices-types';
+import { JQOrder, JQFieldType } from '@lomray/microservices-types';
 import { Type } from 'class-transformer';
 import { IsArray, IsEnum, IsNumber, IsObject, IsString, IsEmpty } from 'class-validator';
 import { JSONSchema } from 'class-validator-jsonschema';
@@ -10,7 +10,7 @@ import IsUndefinable from '@validators/is-undefinable';
   example: { exampleField: 'DESC', exampleField2: { order: 'ASC' } },
 })
 class IJsonQueryOrderFilter {
-  @IsEnum(IJsonQueryOrder)
+  @IsEnum(JQOrder)
   @IsUndefinable()
   exampleField?: keyof typeof IJsonQueryOrderFilter;
 
@@ -19,7 +19,7 @@ class IJsonQueryOrderFilter {
   @JSONSchema({
     format: 'field: { order: "DESC", nulls: "last" }',
   })
-  exampleField2?: IJsonQueryOrderField;
+  exampleField2?: JQFieldType;
 }
 
 class IJsonQueryWhereFilter<TEntity> {

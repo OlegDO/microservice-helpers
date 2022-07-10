@@ -82,7 +82,7 @@ const redact = (obj: Record<string | symbol, any>): Record<string | symbol, any>
 
   redactObject(copy);
 
-  const splat = copy[Symbol.for('splat')];
+  const splat = copy[Symbol.for('splat')] as Record<string, any>;
 
   redactObject(splat); // Specifically redact splat Symbol
 

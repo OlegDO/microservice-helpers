@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import rewiremock from 'rewiremock';
 import sinon from 'sinon';
 import type { SelectQueryBuilder } from 'typeorm';

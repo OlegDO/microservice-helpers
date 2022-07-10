@@ -1,7 +1,8 @@
 import type { IEndpointHandler } from '@lomray/microservice-nodejs-lib';
 import { BaseException } from '@lomray/microservice-nodejs-lib';
-import type { ITypeormJsonQueryOptions, ObjectLiteral } from '@lomray/typeorm-json-query';
-import TypeormJsonQuery, { IJsonQuery } from '@lomray/typeorm-json-query';
+import type { ObjectLiteral, IJsonQuery } from '@lomray/microservices-types';
+import type { ITypeormJsonQueryOptions } from '@lomray/typeorm-json-query';
+import TypeormJsonQuery from '@lomray/typeorm-json-query';
 import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsNumber, IsObject, validate } from 'class-validator';
 import { JSONSchema } from 'class-validator-jsonschema';
@@ -1312,10 +1313,13 @@ class Endpoint {
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, queryOptions);
 
       if (typeof input === 'function') {
-        const errors = await validate(Object.assign(new (input as Constructable)(), params), {
-          whitelist: true,
-          validationError: { target: false },
-        });
+        const errors = await validate(
+          Object.assign(new (input as Constructable)() as Record<string, any>, params),
+          {
+            whitelist: true,
+            validationError: { target: false },
+          },
+        );
 
         if (errors.length > 0) {
           throw new BaseException({
@@ -1347,10 +1351,13 @@ class Endpoint {
       const { input } = customOptions();
 
       if (typeof input === 'function') {
-        const errors = await validate(Object.assign(new (input as Constructable)(), params), {
-          whitelist: true,
-          validationError: { target: false },
-        });
+        const errors = await validate(
+          Object.assign(new (input as Constructable)() as Record<string, any>, params),
+          {
+            whitelist: true,
+            validationError: { target: false },
+          },
+        );
 
         if (errors.length > 0) {
           throw new BaseException({
