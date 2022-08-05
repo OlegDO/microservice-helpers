@@ -31,6 +31,7 @@ export default {
     'typeorm-extension',
     '@lomray/microservice-nodejs-lib',
     '@lomray/microservice-remote-middleware',
+    '@lomray/microservices-types',
     'class-validator-jsonschema',
     '@lomray/typeorm-json-query',
     'typeorm/query-builder/SelectQueryBuilder',

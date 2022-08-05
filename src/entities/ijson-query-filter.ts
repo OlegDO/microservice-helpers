@@ -1,5 +1,10 @@
-import type { IJsonQuery, IJsonQueryWhere, ObjectLiteral } from '@lomray/microservices-types';
-import { JQOrder, JQFieldType } from '@lomray/microservices-types';
+import type {
+  IJsonQuery,
+  IJsonQueryWhere,
+  ObjectLiteral,
+  JQFieldType,
+} from '@lomray/microservices-types';
+import { JQOrder } from '@lomray/microservices-types';
 import { Type } from 'class-transformer';
 import { IsArray, IsEnum, IsNumber, IsObject, IsString, IsEmpty } from 'class-validator';
 import { JSONSchema } from 'class-validator-jsonschema';
