@@ -1,5 +1,3 @@
-import FirebaseAdmin from 'firebase-admin';
-import type { ServiceAccount } from 'firebase-admin/lib/app/credential';
 import RemoteConfig from '@services/remote-config';
 
 export interface IFirebaseSdkParams {
@@ -7,7 +5,11 @@ export interface IFirebaseSdkParams {
   credential?: Record<string, any>;
 }
 
-export type TFirebaseAdmin = typeof FirebaseAdmin;
+export interface IServiceAccount {
+  projectId?: string;
+  clientEmail?: string;
+  privateKey?: string;
+}
 
 /**
  * Firebase singletone
@@ -24,6 +26,12 @@ class FirebaseSdk {
   private static hasConfigMs: boolean;
 
   /**
+   * Firebase Admin import
+   * @private
+   */
+  private static firebaseAdmin: any;
+
+  /**
    * @private
    */
   private static credential?: IFirebaseSdkParams['credential'];
@@ -32,9 +40,11 @@ class FirebaseSdk {
    * Init service
    */
   public static init(
+    firebaseAdmin: any,
     { hasConfigMs = true, credential = {} }: IFirebaseSdkParams = {},
     shouldReset = false,
   ): void {
+    this.firebaseAdmin = firebaseAdmin;
     this.hasConfigMs = hasConfigMs;
     this.credential = credential;
 
@@ -46,25 +56,25 @@ class FirebaseSdk {
   /**
    * Get firebase sdk
    */
-  public static async get(): Promise<TFirebaseAdmin> {
+  public static async get(): Promise<any> {
     if (!this.hasInit) {
       const config = this.hasConfigMs
-        ? await RemoteConfig.get<{ credential?: ServiceAccount }>('firebase', {
+        ? await RemoteConfig.get<{ credential?: IServiceAccount }>('firebase', {
             isThrowNotExist: true,
             isCommon: true,
           })
         : {};
 
-      const credentials = config?.credential ?? (this.credential as ServiceAccount);
+      const credentials = config?.credential ?? (this.credential as IServiceAccount);
 
-      FirebaseAdmin.initializeApp({
-        credential: FirebaseAdmin.credential.cert(credentials),
+      this.firebaseAdmin.initializeApp({
+        credential: this.firebaseAdmin.credential.cert(credentials),
       });
 
       this.hasInit = true;
     }
 
-    return FirebaseAdmin;
+    return this.firebaseAdmin;
   }
 }
 
