@@ -1,5 +1,5 @@
 import type { IEndpointHandlerOptions, IEndpoints } from '@lomray/microservice-nodejs-lib';
-import { IsObject } from 'class-validator';
+import { IsObject, IsString } from 'class-validator';
 import { JSONSchema, validationMetadatasToSchemas } from 'class-validator-jsonschema';
 import type { SchemaObject } from 'openapi3-ts';
 import type { IWithEndpointMeta } from '@services/endpoint';
@@ -17,6 +17,7 @@ export interface IMicroserviceMeta {
     };
   };
   entities: Record<string, SchemaObject>;
+  version: string;
 }
 
 /**
@@ -45,6 +46,9 @@ class MicroserviceMetaOutput {
   })
   @IsObject()
   entities: IMicroserviceMeta['entities'];
+
+  @IsString()
+  version: string;
 }
 
 /**
@@ -64,7 +68,7 @@ class MicroserviceMeta {
   /**
    * Make and return endpoints metadata
    */
-  public static getMeta(msEndpoints: IEndpoints): IMicroserviceMeta {
+  public static getMeta(msEndpoints: IEndpoints, version = 'unknown'): IMicroserviceMeta {
     const entities = MicroserviceMeta.getEntitiesMeta();
     const endpoints = Object.entries(msEndpoints).reduce((res, [path, { handler, options }]) => {
       const { input, output, description } =
@@ -81,7 +85,7 @@ class MicroserviceMeta {
       };
     }, {});
 
-    return { endpoints, entities };
+    return { endpoints, entities, version };
   }
 }
 
