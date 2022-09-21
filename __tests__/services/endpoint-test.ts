@@ -53,10 +53,10 @@ describe('services/endpoint', () => {
         { hasRemoved: true, payload: { authorization: {} } },
         endpointOptions,
       );
-      const [queryBuilder, hasRemoved] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
-      expect(hasRemoved).to.be.ok;
+      expect(params?.hasRemoved).to.be.ok;
       expect(result).to.deep.equal(countResult());
     });
 
@@ -65,10 +65,10 @@ describe('services/endpoint', () => {
       handler.callsFake((query) => query.toQuery());
 
       const result = await countHandler({ hasRemoved: true }, endpointOptions);
-      const [queryBuilder, hasRemoved] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
-      expect(hasRemoved).to.be.ok;
+      expect(params?.hasRemoved).to.be.ok;
       expect(result).to.deep.equal(countResult());
     });
 
@@ -77,10 +77,10 @@ describe('services/endpoint', () => {
       handler.callsFake((query) => ({ query, payloadParam: 1 }));
 
       const result = await countHandler({ hasRemoved: true }, endpointOptions);
-      const [queryBuilder, hasRemoved] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
-      expect(hasRemoved).to.be.ok;
+      expect(params?.hasRemoved).to.be.ok;
       expect(result).to.deep.equal({ ...countResult(), payloadParam: 1 });
     });
 
@@ -89,10 +89,10 @@ describe('services/endpoint', () => {
       handler.callsFake((query) => ({ query: query.toQuery(), payloadParam: 1 }));
 
       const result = await countHandler({ hasRemoved: true }, endpointOptions);
-      const [queryBuilder, hasRemoved] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
-      expect(hasRemoved).to.be.ok;
+      expect(params?.hasRemoved).to.be.ok;
       expect(result).to.deep.equal({ ...countResult(), payloadParam: 1 });
     });
 
@@ -117,11 +117,24 @@ describe('services/endpoint', () => {
     it('handler - should return count entities with removed: default handler', async () => {
       const qb = repository.createQueryBuilder();
       const withDeletedSpy = sandbox.spy(qb, 'withDeleted');
-      const result = await Endpoint.defaultHandler.count(qb, true);
+      const result = await Endpoint.defaultHandler.count(qb, { hasRemoved: true });
 
       expect(withDeletedSpy).to.be.calledOnce;
       expect(TypeormMock.queryBuilder.getCount).to.be.calledOnce;
       expect(result).to.deep.equal({ count: 0 });
+    });
+
+    it('should run default count handler with query builder: typeorm case - cache', async () => {
+      const qb = repository.createQueryBuilder();
+      const res = await Endpoint.defaultHandler.count(qb, { cache: 100 });
+
+      expect(TypeormMock.queryBuilder.getCount).to.be.calledOnce;
+      expect(qb.expressionMap.cache).to.be.ok;
+      expect(qb.expressionMap.cacheDuration).to.equal(100);
+      expect(qb.expressionMap.cacheId).to.equal(
+        'CRUD:count:TestEntity:d41d8cd98f00b204e9800998ecf8427e',
+      );
+      expect(res).to.deep.equal(countResult());
     });
 
     it('should run default handler metadata: count', () => {
@@ -153,11 +166,25 @@ describe('services/endpoint', () => {
       }));
 
       const result = await listWithDefaultHandler({ hasRemoved: true }, endpointOptions);
-      const [queryBuilder, isListWithCount, hasRemoved] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder, isListWithCount, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
       expect(isListWithCount).to.be.false;
-      expect(hasRemoved).to.be.ok;
+      expect(params?.hasRemoved).to.be.ok;
+      expect(result).to.deep.equal(listResult());
+    });
+
+    it('should run default list handler with query builder: parallel query', async () => {
+      const listWithDefaultHandler = Endpoint.list?.(() => ({
+        repository,
+        isParallel: true,
+      }));
+
+      const result = await listWithDefaultHandler({}, endpointOptions);
+      const [queryBuilder, , params] = defaultHandlerStub.firstCall.args;
+
+      expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
+      expect(params?.isParallel).to.be.ok;
       expect(result).to.deep.equal(listResult());
     });
 
@@ -166,11 +193,12 @@ describe('services/endpoint', () => {
       handler.callsFake((query) => query.toQuery());
 
       const result = await listHandler({}, endpointOptions);
-      const [queryBuilder, isListWithCount, hasRemoved] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder, isListWithCount, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
       expect(isListWithCount).to.be.ok;
-      expect(hasRemoved).to.be.undefined;
+      expect(params?.hasRemoved).to.be.undefined;
+      expect(params?.isParallel).to.be.undefined;
       expect(result).to.deep.equal(listResult());
     });
 
@@ -179,11 +207,12 @@ describe('services/endpoint', () => {
       handler.callsFake((query) => ({ query, payloadParam: 1 }));
 
       const result = await listHandler({}, endpointOptions);
-      const [queryBuilder, isListWithCount, hasRemoved] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder, isListWithCount, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
       expect(isListWithCount).to.be.ok;
-      expect(hasRemoved).to.be.undefined;
+      expect(params?.hasRemoved).to.be.undefined;
+      expect(params?.isParallel).to.be.undefined;
       expect(result).to.deep.equal({ ...listResult(), payloadParam: 1 });
     });
 
@@ -192,11 +221,12 @@ describe('services/endpoint', () => {
       handler.callsFake((query) => ({ query: query.toQuery(), payloadParam: 1 }));
 
       const result = await listHandler({}, endpointOptions);
-      const [queryBuilder, isListWithCount, hasRemoved] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder, isListWithCount, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
       expect(isListWithCount).to.be.ok;
-      expect(hasRemoved).to.be.undefined;
+      expect(params?.hasRemoved).to.be.undefined;
+      expect(params?.isParallel).to.be.undefined;
       expect(result).to.deep.equal({ ...listResult(), payloadParam: 1 });
     });
 
@@ -222,10 +252,23 @@ describe('services/endpoint', () => {
       const qb = repository.createQueryBuilder();
       const withDeletedSpy = sandbox.spy(qb, 'withDeleted');
 
-      const result = await Endpoint.defaultHandler.list(qb, true, true);
+      const result = await Endpoint.defaultHandler.list(qb, true, { hasRemoved: true });
 
       expect(withDeletedSpy).to.be.calledOnce;
       expect(TypeormMock.queryBuilder.getManyAndCount).to.be.calledOnce;
+      expect(result).to.deep.equal({ list: [], count: 0 });
+    });
+
+    it('handler - should return list entities cached: default handler', async () => {
+      const qb = repository.createQueryBuilder();
+      const result = await Endpoint.defaultHandler.list(qb, true, { cache: { listCache: 150 } });
+
+      expect(TypeormMock.queryBuilder.getManyAndCount).to.be.calledOnce;
+      expect(qb.expressionMap.cache).to.be.ok;
+      expect(qb.expressionMap.cacheDuration).to.equal(150);
+      expect(qb.expressionMap.cacheId).to.equal(
+        'CRUD:list:TestEntity:d41d8cd98f00b204e9800998ecf8427e',
+      );
       expect(result).to.deep.equal({ list: [], count: 0 });
     });
 
@@ -315,6 +358,20 @@ describe('services/endpoint', () => {
 
       expect(passedFields).to.deep.equal([fields]);
       expect(passedOptions).to.have.property('chunk');
+    });
+
+    it('handler - should success create entity & reset cache', async () => {
+      const fields = { param: 'test2' };
+
+      await Endpoint.defaultHandler.create({
+        fields,
+        repository,
+        shouldResetCache: true,
+      });
+
+      const [, passedFields] = TypeormMock.entityManager.save.firstCall.args;
+
+      expect(passedFields).to.deep.equal([fields]);
     });
 
     it('handler - should success create multiple entities', async () => {
@@ -433,6 +490,23 @@ describe('services/endpoint', () => {
       const result = Endpoint.defaultHandler.view(repository.createQueryBuilder());
 
       expect(await waitResult(result)).to.throw(emptyConditionMessage);
+    });
+
+    it('handler - should return cached result', async () => {
+      defaultHandlerStub.restore();
+      TypeormMock.queryBuilder.getMany.resolves([entity]);
+
+      const qb = repository.createQueryBuilder().where('sample = 1');
+      const result = await Endpoint.defaultHandler.view(qb, {
+        cache: 200,
+      });
+
+      expect(result).to.deep.equal({ entity });
+      expect(qb.expressionMap.cache).to.be.ok;
+      expect(qb.expressionMap.cacheDuration).to.equal(200);
+      expect(qb.expressionMap.cacheId).to.equal(
+        'CRUD:view:TestEntity:794e2d0322432a65957b5a6279a3d896',
+      );
     });
 
     it('handler - should throw error: condition for multiple entities', async () => {
@@ -842,11 +916,11 @@ describe('services/endpoint', () => {
       );
 
       const result = await restoreHandler({}, endpointOptions);
-      const [passedRepo, queryBuilder, isAllowMultiple] = defaultHandlerStub.firstCall.args;
+      const [passedRepo, queryBuilder, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
       expect(passedRepo).to.equal(repository);
-      expect(isAllowMultiple).to.false;
+      expect(params?.isAllowMultiple).to.false;
       expect(result).to.deep.equal(restoreResult());
     });
 
@@ -863,11 +937,9 @@ describe('services/endpoint', () => {
     it('handler - should throw error: empty restore condition', async () => {
       defaultHandlerStub.restore();
 
-      const result = Endpoint.defaultHandler.restore(
-        repository,
-        repository.createQueryBuilder(),
-        false,
-      );
+      const result = Endpoint.defaultHandler.restore(repository, repository.createQueryBuilder(), {
+        isAllowMultiple: false,
+      });
 
       expect(await waitResult(result)).to.throw(emptyConditionMessage);
     });
@@ -876,7 +948,7 @@ describe('services/endpoint', () => {
       const result = Endpoint.defaultHandler.restore(
         repository,
         repository.createQueryBuilder().where('id = 1'),
-        false,
+        { isAllowMultiple: false },
       );
 
       expect(await waitResult(result)).to.throw(entityNotFoundMessage);
@@ -888,7 +960,7 @@ describe('services/endpoint', () => {
       const result = Endpoint.defaultHandler.restore(
         repository,
         repository.createQueryBuilder().where('id = 1'),
-        false,
+        { isAllowMultiple: false },
       );
 
       expect(await waitResult(result)).to.throw('only one entity at a time');
@@ -901,7 +973,7 @@ describe('services/endpoint', () => {
       const result = Endpoint.defaultHandler.restore(
         repository,
         repository.createQueryBuilder().where('id = 1'),
-        false,
+        { isAllowMultiple: false },
       );
 
       expect(await waitResult(result)).to.throw('Unknown');
@@ -913,7 +985,7 @@ describe('services/endpoint', () => {
       const result = await Endpoint.defaultHandler.restore(
         repository,
         repository.createQueryBuilder().where('id = 1'),
-        false,
+        { isAllowMultiple: false },
       );
 
       expect(TypeormMock.entityManager.recover).to.be.calledOnce;
@@ -1090,13 +1162,13 @@ describe('services/endpoint', () => {
       await methods[customMethodName]({});
       defaultHandlerStub.restore();
 
-      const [passedRepo, qb, isAllowMultiple] = defaultHandlerStub.firstCall.args;
+      const [passedRepo, qb, params] = defaultHandlerStub.firstCall.args;
 
       expect(methods).to.not.have.property('restore');
       expect(methods).to.have.property(customMethodName);
       expect(passedRepo).to.equal(repository);
       expect(qb).to.instanceof(SelectQueryBuilder);
-      expect(isAllowMultiple).to.false;
+      expect(params?.isAllowMultiple).to.false;
     });
   });
 

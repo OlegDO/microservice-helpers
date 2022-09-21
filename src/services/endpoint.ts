@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import type { IEndpointHandler } from '@lomray/microservice-nodejs-lib';
 import { BaseException } from '@lomray/microservice-nodejs-lib';
 import type { ObjectLiteral, IJsonQuery } from '@lomray/microservices-types';
@@ -6,6 +7,7 @@ import TypeormJsonQuery from '@lomray/typeorm-json-query';
 import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsNumber, IsObject, validate } from 'class-validator';
 import { JSONSchema } from 'class-validator-jsonschema';
+import { DeleteResult } from 'typeorm';
 import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder';
 import type { Repository } from 'typeorm/repository/Repository';
 import { IJsonQueryFilter } from '@entities/ijson-query-filter';
@@ -291,29 +293,40 @@ interface ICrudParams<TEntity, TParams = ObjectLiteral, TResult = ObjectLiteral>
   description?: EndpointDescription;
 }
 
-interface ICountParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {}
+interface ICountParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
+  cache?: number;
+}
 
 interface IListParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
   isListWithCount?: boolean; // return entities with count
+  isParallel?: boolean; // run count and get entities parallel
+  cache?: { listCache?: number; countCache?: number };
 }
 
-interface IViewParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {}
+interface IViewParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
+  cache?: number;
+}
 
 interface ICreateParams<TEntity, TParams, TResult>
   extends Omit<ICrudParams<TEntity, TParams, TResult>, 'queryOptions'> {
   isAllowMultiple?: boolean;
+  shouldResetCache?: boolean;
 }
 
-interface IUpdateParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {}
+interface IUpdateParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
+  shouldResetCache?: boolean;
+}
 
 interface IRemoveParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
   isAllowMultiple?: boolean;
   isSoftDelete?: boolean;
   shouldReturnEntity?: boolean;
+  shouldResetCache?: boolean;
 }
 
 interface IRestoreParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
   isAllowMultiple?: boolean;
+  shouldResetCache?: boolean;
 }
 
 interface ICustomWithQueryParams<TEntity, TParams = ObjectLiteral, TResult = ObjectLiteral>
@@ -463,6 +476,60 @@ const hasEmptyCondition = <TEntity>(query: SelectQueryBuilder<TEntity>): boolean
 };
 
 /**
+ * Cache keys
+ */
+const CACHE_KEYS = {
+  list: 'CRUD:list',
+  count: 'CRUD:count',
+  view: 'CRUD:view',
+};
+
+/**
+ * Get query cache key
+ */
+const getCacheKey = (
+  query: SelectQueryBuilder<any>,
+  prefix: string,
+  { hasOnlyAlias = false, hasOnlyWhere = false } = {},
+): string => {
+  const cacheKey = `${prefix}:${query.alias}`;
+
+  if (hasOnlyAlias) {
+    return cacheKey;
+  }
+
+  const expression = query.getSql().split('WHERE ')[1] ?? '';
+  const condition = expression?.split(/\s(limit|order|group|having)/i)?.[0] ?? '';
+
+  if (hasOnlyWhere) {
+    return `${cacheKey}:${crypto.createHash('md5').update(condition).digest('hex')}`;
+  }
+
+  return `${cacheKey}:${crypto.createHash('md5').update(expression).digest('hex')}`;
+};
+
+/**
+ * Reset cache
+ */
+const resetCache = (repository: Repository<any>, keys: string[] = []): Promise<DeleteResult> => {
+  const cacheTable: string =
+    repository.manager.connection?.queryResultCache?.['queryResultCacheTable'] ??
+    'query-result-cache';
+  const query = repository.createQueryBuilder();
+  const qb = repository.manager.createQueryBuilder().delete().from(cacheTable);
+
+  keys.forEach((key, i) => {
+    const identifier = getCacheKey(query, key, { hasOnlyAlias: true });
+
+    qb.orWhere(`${qb.escape('identifier')} LIKE :identifier${i}`, {
+      [`identifier${i}`]: `${identifier}:%`,
+    });
+  });
+
+  return qb.execute();
+};
+
+/**
  * Default method handler
  */
 const defaultHandler = <TEntity>(query: TypeormJsonQuery<TEntity>): TypeormJsonQuery<TEntity> =>
@@ -473,10 +540,14 @@ const defaultHandler = <TEntity>(query: TypeormJsonQuery<TEntity>): TypeormJsonQ
  */
 const getQueryCount = async <TEntity>(
   query: SelectQueryBuilder<TEntity>,
-  hasRemoved = false,
+  { hasRemoved = false, cache = 0 } = {},
 ): Promise<CountOutputParams> => {
   if (hasRemoved) {
     query.withDeleted();
+  }
+
+  if (cache) {
+    query.cache(getCacheKey(query, CACHE_KEYS.count, { hasOnlyWhere: true }), cache);
   }
 
   return {
@@ -490,23 +561,37 @@ const getQueryCount = async <TEntity>(
 const getQueryList = async <TEntity>(
   query: SelectQueryBuilder<TEntity>,
   isWithCount: boolean,
-  hasRemoved = false,
+  { hasRemoved = false, isParallel = false, cache: { listCache = 0, countCache = 0 } = {} } = {},
 ): Promise<ListOutputParams<TEntity>> => {
   if (hasRemoved) {
     query.withDeleted();
   }
 
-  if (isWithCount) {
-    const [list, count] = await query.getManyAndCount();
+  if (listCache) {
+    query.cache(getCacheKey(query, CACHE_KEYS.list), listCache);
+  }
 
-    return {
-      list,
-      count,
-    };
+  if (!isWithCount) {
+    return { list: await query.getMany() };
+  }
+
+  let list, count;
+
+  if (!isParallel) {
+    [list, count] = await query.getManyAndCount();
+  } else {
+    const countQuery = query.clone();
+
+    if (countCache) {
+      countQuery.cache(getCacheKey(query, CACHE_KEYS.count, { hasOnlyWhere: true }), countCache);
+    }
+
+    [list, count] = await Promise.all([query.getMany(), countQuery.getCount()]);
   }
 
   return {
-    list: await query.getMany(),
+    list,
+    count,
   };
 };
 
@@ -517,10 +602,12 @@ const createDefaultHandler = async <TEntity, TResult = never>({
   fields,
   repository,
   isAllowMultiple = false,
+  shouldResetCache = false,
 }: {
   fields: CreateRequestParams<TEntity>['fields'];
   repository: ICrudParams<TEntity>['repository'];
   isAllowMultiple?: boolean;
+  shouldResetCache?: boolean;
 }): Promise<ICreateLazyResult<TEntity, TResult>> => {
   const isArray = Array.isArray(fields);
   const entitiesAttributes = isArray ? fields : [fields];
@@ -558,6 +645,10 @@ const createDefaultHandler = async <TEntity, TResult = never>({
   try {
     const result = await repository.save(entities, { chunk: 20 });
 
+    if (shouldResetCache) {
+      void resetCache(repository, [CACHE_KEYS.list, CACHE_KEYS.count, CACHE_KEYS.view]);
+    }
+
     return { entity: isArray ? result : result[0] };
   } catch (e) {
     const { detail } = e;
@@ -583,6 +674,7 @@ const createDefaultHandler = async <TEntity, TResult = never>({
  */
 const viewDefaultHandler = async <TEntity>(
   query: SelectQueryBuilder<TEntity>,
+  { cache = 0 } = {},
 ): Promise<ViewOutputParams<TEntity>> => {
   if (hasEmptyCondition(query)) {
     throw new BaseException({
@@ -590,6 +682,10 @@ const viewDefaultHandler = async <TEntity>(
       status: 422,
       message: 'Entity view condition is empty.',
     });
+  }
+
+  if (cache) {
+    query.cache(getCacheKey(query, CACHE_KEYS.view), cache);
   }
 
   const targets = await query.take(2).getMany();
@@ -624,6 +720,7 @@ const updateDefaultHandler = async <TEntity>(
   query: SelectQueryBuilder<TEntity>,
   fields: Partial<TEntity>,
   repository: ICrudParams<TEntity>['repository'],
+  shouldResetCache = false,
 ): Promise<UpdateOutputParams<TEntity>> => {
   // catch attempting pass empty fields for update
   if (Object.keys(fields).length === 0) {
@@ -652,7 +749,13 @@ const updateDefaultHandler = async <TEntity>(
   }
 
   try {
-    return { entity: await repository.save(result) };
+    const updatedEntity = await repository.save(result);
+
+    if (shouldResetCache) {
+      void resetCache(repository, [CACHE_KEYS.list, CACHE_KEYS.view]);
+    }
+
+    return { entity: updatedEntity };
   } catch (e) {
     throw new BaseException({
       code: CRUD_EXCEPTION_CODE.FAILED_UPDATE,
@@ -672,9 +775,10 @@ const removeDefaultHandler = async <TEntity>(
     isAllowMultiple,
     isSoftDelete,
     shouldReturnEntity,
+    shouldResetCache,
   }: Pick<
     IRemoveParams<TEntity, never, never>,
-    'isSoftDelete' | 'isAllowMultiple' | 'shouldReturnEntity'
+    'isSoftDelete' | 'isAllowMultiple' | 'shouldReturnEntity' | 'shouldResetCache'
   >,
 ): Promise<RemoveOutputParams<TEntity>> => {
   if (hasEmptyCondition(query)) {
@@ -728,6 +832,10 @@ const removeDefaultHandler = async <TEntity>(
       await repository.remove(entities);
     }
 
+    if (shouldResetCache) {
+      void resetCache(repository, [CACHE_KEYS.list, CACHE_KEYS.count, CACHE_KEYS.view]);
+    }
+
     return { deleted, ...(shouldReturnEntity ? { entities } : {}) };
   } catch (e) {
     throw new BaseException({
@@ -744,7 +852,7 @@ const removeDefaultHandler = async <TEntity>(
 const restoreDefaultHandler = async <TEntity>(
   repository: ICrudParams<TEntity>['repository'],
   query: SelectQueryBuilder<TEntity>,
-  isAllowMultiple: boolean,
+  { isAllowMultiple = false, shouldResetCache = false } = {},
 ): Promise<RestoreOutputParams<TEntity>> => {
   if (hasEmptyCondition(query)) {
     throw new BaseException({
@@ -773,7 +881,13 @@ const restoreDefaultHandler = async <TEntity>(
       });
     }
 
-    return { restored: await repository.recover(entities) };
+    const restored = await repository.recover(entities);
+
+    if (shouldResetCache) {
+      void resetCache(repository, [CACHE_KEYS.list, CACHE_KEYS.count, CACHE_KEYS.view]);
+    }
+
+    return { restored };
   } catch (e) {
     throw new BaseException({
       code: CRUD_EXCEPTION_CODE.FAILED_RESTORE,
@@ -944,7 +1058,7 @@ class Endpoint {
   > {
     const countHandler: IReturn<TEntity, TParams, TPayload, CountOutputParams | TResult> =
       async function (params, options) {
-        const { repository, queryOptions } = countOptions();
+        const { repository, queryOptions, cache } = countOptions();
         const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
           ...queryOptions,
           isDisableOrderBy: true,
@@ -952,26 +1066,27 @@ class Endpoint {
         });
         const result = await handler(typeQuery, params, options);
         const { hasRemoved } = params;
+        const defaultParams = { hasRemoved, cache };
 
         if (result instanceof TypeormJsonQuery) {
-          return Endpoint.defaultHandler.count(result.toQuery(), hasRemoved);
+          return Endpoint.defaultHandler.count(result.toQuery(), defaultParams);
         }
 
         if (result instanceof SelectQueryBuilder) {
-          return Endpoint.defaultHandler.count(result, hasRemoved);
+          return Endpoint.defaultHandler.count(result, defaultParams);
         }
 
         const { query, count, ...payload } = result;
 
         if (query instanceof TypeormJsonQuery) {
           return {
-            ...(await Endpoint.defaultHandler.count(query.toQuery(), hasRemoved)),
+            ...(await Endpoint.defaultHandler.count(query.toQuery(), defaultParams)),
             ...payload,
           };
         }
 
         if (query instanceof SelectQueryBuilder) {
-          return { ...(await Endpoint.defaultHandler.count(query, hasRemoved)), ...payload };
+          return { ...(await Endpoint.defaultHandler.count(query, defaultParams)), ...payload };
         }
 
         return { count, ...payload };
@@ -994,31 +1109,42 @@ class Endpoint {
   ): IReturnWithMeta<TEntity, TParams, TPayload, ListOutputParams<TEntity> | TResult> {
     const listHandler: IReturn<TEntity, TParams, TPayload, ListOutputParams<TEntity> | TResult> =
       async function (params, options) {
-        const { repository, queryOptions, isListWithCount = true } = listOptions();
+        const {
+          repository,
+          queryOptions,
+          isListWithCount = true,
+          isParallel,
+          cache,
+        } = listOptions();
         const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, queryOptions);
         const result = await handler(typeQuery, params, options);
         const { hasRemoved } = params;
+        const defaultParams = { hasRemoved, isParallel, cache };
 
         if (result instanceof TypeormJsonQuery) {
-          return Endpoint.defaultHandler.list(result.toQuery(), isListWithCount, hasRemoved);
+          return Endpoint.defaultHandler.list(result.toQuery(), isListWithCount, defaultParams);
         }
 
         if (result instanceof SelectQueryBuilder) {
-          return Endpoint.defaultHandler.list(result, isListWithCount, hasRemoved);
+          return Endpoint.defaultHandler.list(result, isListWithCount, defaultParams);
         }
 
         const { query, ...payload } = result;
 
         if (query instanceof TypeormJsonQuery) {
           return {
-            ...(await Endpoint.defaultHandler.list(query.toQuery(), isListWithCount, hasRemoved)),
+            ...(await Endpoint.defaultHandler.list(
+              query.toQuery(),
+              isListWithCount,
+              defaultParams,
+            )),
             ...payload,
           };
         }
 
         if (query instanceof SelectQueryBuilder) {
           return {
-            ...(await Endpoint.defaultHandler.list(query, isListWithCount, hasRemoved)),
+            ...(await Endpoint.defaultHandler.list(query, isListWithCount, defaultParams)),
             ...payload,
           };
         }
@@ -1050,7 +1176,7 @@ class Endpoint {
   ): IReturnWithMeta<TEntity, TParams, TPayload, ViewOutputParams<TEntity> | TResult> {
     const viewHandler: IReturn<TEntity, TParams, TPayload, ViewOutputParams<TEntity> | TResult> =
       async function (params, options) {
-        const { repository, queryOptions } = viewOptions();
+        const { repository, queryOptions, cache } = viewOptions();
         const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
           ...queryOptions,
           isDisableOrderBy: true,
@@ -1059,11 +1185,11 @@ class Endpoint {
         const result = await handler(typeQuery, params, options);
 
         if (result instanceof TypeormJsonQuery) {
-          return Endpoint.defaultHandler.view(result.toQuery());
+          return Endpoint.defaultHandler.view(result.toQuery(), { cache });
         }
 
         if (result instanceof SelectQueryBuilder) {
-          return Endpoint.defaultHandler.view(result);
+          return Endpoint.defaultHandler.view(result, { cache });
         }
 
         return result;
@@ -1096,14 +1222,14 @@ class Endpoint {
       TPayload,
       ICreateLazyResult<TEntity, TResult>
     > = (params, options) => {
-      const { repository, isAllowMultiple } = createOptions();
+      const { repository, isAllowMultiple, shouldResetCache } = createOptions();
       const { fields } = params ?? {};
 
       if (handler) {
         return handler(fields, params, options);
       }
 
-      return this.defaultHandler.create({ fields, repository, isAllowMultiple });
+      return this.defaultHandler.create({ fields, repository, isAllowMultiple, shouldResetCache });
     };
 
     return withMeta(createHandler, createOptions, Endpoint.defaultParams.create);
@@ -1127,7 +1253,7 @@ class Endpoint {
       TPayload,
       UpdateOutputParams<TEntity> | TResult
     > = async function (params, options) {
-      const { repository, queryOptions } = updateOptions();
+      const { repository, queryOptions, shouldResetCache } = updateOptions();
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
         ...queryOptions,
         isDisableRelations: true,
@@ -1160,21 +1286,36 @@ class Endpoint {
       }
 
       if (result instanceof TypeormJsonQuery) {
-        return Endpoint.defaultHandler.update(result.toQuery(), fields, repository);
+        return Endpoint.defaultHandler.update(
+          result.toQuery(),
+          fields,
+          repository,
+          shouldResetCache,
+        );
       }
 
       if (result instanceof SelectQueryBuilder) {
-        return Endpoint.defaultHandler.update(result, fields, repository);
+        return Endpoint.defaultHandler.update(result, fields, repository, shouldResetCache);
       }
 
       const { query, fields: updatedFields, result: entity } = result;
 
       if (query instanceof TypeormJsonQuery) {
-        return Endpoint.defaultHandler.update(query.toQuery(), updatedFields ?? fields, repository);
+        return Endpoint.defaultHandler.update(
+          query.toQuery(),
+          updatedFields ?? fields,
+          repository,
+          shouldResetCache,
+        );
       }
 
       if (query instanceof SelectQueryBuilder) {
-        return Endpoint.defaultHandler.update(query, updatedFields ?? fields, repository);
+        return Endpoint.defaultHandler.update(
+          query,
+          updatedFields ?? fields,
+          repository,
+          shouldResetCache,
+        );
       }
 
       return entity;
@@ -1213,6 +1354,7 @@ class Endpoint {
         isAllowMultiple = true,
         isSoftDelete = false,
         shouldReturnEntity = false,
+        shouldResetCache = false,
       } = removeOptions();
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
         ...queryOptions,
@@ -1228,6 +1370,7 @@ class Endpoint {
           isAllowMultiple,
           isSoftDelete,
           shouldReturnEntity,
+          shouldResetCache,
         });
       }
 
@@ -1236,6 +1379,7 @@ class Endpoint {
           isAllowMultiple,
           isSoftDelete,
           shouldReturnEntity,
+          shouldResetCache,
         });
       }
 
@@ -1269,7 +1413,12 @@ class Endpoint {
       TPayload,
       RestoreOutputParams<TEntity> | TResult
     > = async function (params, options) {
-      const { repository, isAllowMultiple = true, queryOptions } = restoreOptions();
+      const {
+        repository,
+        isAllowMultiple = true,
+        queryOptions,
+        shouldResetCache,
+      } = restoreOptions();
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
         ...queryOptions,
         isDisableRelations: true,
@@ -1278,13 +1427,14 @@ class Endpoint {
         isDisablePagination: true,
       });
       const result = await handler(typeQuery, params, options);
+      const defaultParams = { isAllowMultiple, shouldResetCache };
 
       if (result instanceof TypeormJsonQuery) {
-        return Endpoint.defaultHandler.restore(repository, result.toQuery(), isAllowMultiple);
+        return Endpoint.defaultHandler.restore(repository, result.toQuery(), defaultParams);
       }
 
       if (result instanceof SelectQueryBuilder) {
-        return Endpoint.defaultHandler.restore(repository, result, isAllowMultiple);
+        return Endpoint.defaultHandler.restore(repository, result, defaultParams);
       }
 
       return result;
@@ -1392,4 +1542,5 @@ export {
   RemoveOutputParams,
   RestoreRequestParams,
   RestoreOutputParams,
+  CACHE_KEYS,
 };
