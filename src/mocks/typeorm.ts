@@ -164,6 +164,7 @@ fakeConnection.createQueryBuilder = function (...args) {
     Object.assign(prevCreateQueryBuilder.call(fakeConnection, ...args), queryBuilder, {
       update: mockUpdate,
       delete: mockDelete,
+      clone: qb.clone,
     });
 
   return qb;

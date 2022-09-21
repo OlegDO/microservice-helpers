@@ -38,6 +38,7 @@ export default {
     'winston-loki',
     'klona/full',
     'traverse',
+    'crypto',
   ],
   plugins: [
     peerDepsExternal(),
