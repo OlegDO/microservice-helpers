@@ -110,6 +110,11 @@ const queryBuilderUpdateMock = () =>
     execute: { affected: 0, generatedMaps: [] },
   } as const);
 
+const queryBuilderDeleteMock = () =>
+  ({
+    execute: { affected: 0, generatedMaps: [] },
+  } as const);
+
 const queryBuilderMock = () =>
   ({
     getManyAndCount: [[], 0],
@@ -133,6 +138,11 @@ const queryUpdateBuilder = Object.entries(queryBuilderUpdateMock()).reduce(
   {},
 ) as { [key in keyof ReturnType<typeof queryBuilderUpdateMock>]: sinon.SinonStub };
 
+const queryDeleteBuilder = Object.entries(queryBuilderDeleteMock()).reduce(
+  (res, [method, value]) => ({ ...res, [method]: sandbox.stub().resolves(value) }),
+  {},
+) as { [key in keyof ReturnType<typeof queryBuilderDeleteMock>]: sinon.SinonStub };
+
 // eslint-disable-next-line @typescript-eslint/unbound-method
 const prevCreateQueryBuilder = fakeConnection.createQueryBuilder;
 
@@ -140,14 +150,20 @@ const prevCreateQueryBuilder = fakeConnection.createQueryBuilder;
 fakeConnection.createQueryBuilder = function (...args) {
   const qb = Object.assign(prevCreateQueryBuilder.call(fakeConnection, ...args), queryBuilder);
   const qbPrevUpdate = qb.update;
+  const qbPrevDelete = qb.delete;
   // @ts-ignore
   const mockUpdate = (...args2) =>
     Object.assign(qbPrevUpdate.call(qb, ...args2), queryUpdateBuilder);
+  // @ts-ignore
+  const mockDelete = (...args2) =>
+    Object.assign(qbPrevDelete.call(qb, ...args2), queryDeleteBuilder);
 
   qb.update = mockUpdate;
+  qb.delete = mockDelete;
   qb.clone = () =>
     Object.assign(prevCreateQueryBuilder.call(fakeConnection, ...args), queryBuilder, {
       update: mockUpdate,
+      delete: mockDelete,
     });
 
   return qb;
