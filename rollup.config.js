@@ -7,7 +7,7 @@ export default {
   // separate mocks folder to prevent errors when use common import
   input: [
     'src/index.ts',
-    'src/services/firebase-sdk.ts',
+    'src/helpers/tracer.ts',
     'src/mocks/index.ts',
     'src/test-helpers/index.ts'
   ],
@@ -39,6 +39,15 @@ export default {
     'klona/full',
     'traverse',
     'crypto',
+    '@opentelemetry/api',
+    '@opentelemetry/exporter-trace-otlp-http',
+    '@opentelemetry/instrumentation-express',
+    '@opentelemetry/instrumentation-http',
+    '@opentelemetry/instrumentation-pg',
+    '@opentelemetry/instrumentation-winston',
+    '@opentelemetry/resources',
+    '@opentelemetry/sdk-node',
+    '@opentelemetry/semantic-conventions',
   ],
   plugins: [
     peerDepsExternal(),
