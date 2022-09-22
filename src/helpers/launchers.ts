@@ -31,6 +31,7 @@ export interface IStartConfig {
   remoteConfig?: { isEnable?: boolean; msConfigName?: string };
   logGrafana?: ILokiTransportOptions | boolean;
   hooks?: {
+    beforeCreateMicroservice?: () => Promise<void> | void;
     afterCreateMicroservice?: (ms: Microservice | Gateway) => Promise<void> | void;
     afterInitRemoteMiddleware?: () => Promise<void> | void;
     beforeStart?: () => Promise<void> | void;
@@ -55,9 +56,16 @@ const start = async ({
   remoteMiddleware,
   remoteConfig,
   logGrafana,
-  hooks: { afterCreateMicroservice, afterInitRemoteMiddleware, beforeStart } = {},
+  hooks: {
+    beforeCreateMicroservice,
+    afterCreateMicroservice,
+    afterInitRemoteMiddleware,
+    beforeStart,
+  } = {},
 }: IStartConfig): Promise<void> => {
   try {
+    await beforeCreateMicroservice?.();
+
     Log.defaultMeta = {
       ...Log.defaultMeta,
       service: msOptions.name,

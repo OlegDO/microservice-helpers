@@ -25,7 +25,7 @@ const { start, startWithDb } = rewiremock.proxy<{
   '@helpers/create-db-connection': CreateDbConnection,
 });
 
-describe('authentication', () => {
+describe('helpers/launchers', () => {
   const sandbox = sinon.createSandbox();
   const msOptions = { name: 'ms-name' };
   const msParams = { logDriver: false };
@@ -44,6 +44,7 @@ describe('authentication', () => {
     const registerMethodsStub = sandbox.stub();
     const registerEventsStub = sandbox.stub();
     const beforeStartStub = sandbox.stub();
+    const beforeCreateMicroserviceStub = sandbox.stub();
     const initRemoteMiddlewareStub = sandbox.stub();
     let stubbedStart;
     let addRegisterEndpointSpy;
@@ -74,6 +75,7 @@ describe('authentication', () => {
         },
         afterInitRemoteMiddleware: initRemoteMiddlewareStub,
         beforeStart: beforeStartStub,
+        beforeCreateMicroservice: beforeCreateMicroserviceStub,
       },
       registerMethods: registerMethodsStub,
       registerEvents: registerEventsStub,
@@ -86,6 +88,7 @@ describe('authentication', () => {
     expect(CreateDbConnection).to.calledOnce;
     expect(stubbedStart).to.calledOnce;
     expect(beforeStartStub).to.calledOnce;
+    expect(beforeCreateMicroserviceStub).to.calledOnce;
     expect(initRemoteMiddlewareStub).to.calledOnce;
     expect(addRegisterEndpointSpy).to.calledOnce;
     expect(obtainMiddlewares).to.calledOnce;
