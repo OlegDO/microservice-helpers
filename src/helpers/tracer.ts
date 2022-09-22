@@ -1,4 +1,3 @@
-import { ResolveSrv } from '@lomray/microservice-nodejs-lib';
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
@@ -8,6 +7,7 @@ import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
 import { Resource } from '@opentelemetry/resources';
 import opentelemetry from '@opentelemetry/sdk-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import ResolveSrv from '@helpers/resolve-srv';
 
 interface IConfig {
   MS_NAME: string;
