@@ -1,3 +1,4 @@
+import { ResolveSrv } from '@lomray/microservice-nodejs-lib';
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
@@ -12,19 +13,29 @@ interface IConfig {
   MS_NAME: string;
   MS_ENABLE_GRAFANA_TRACERS?: number;
   MS_URL_GRAFANA_AGENT_TRACERS?: string;
+  MS_URL_SRV_GRAFANA_AGENT_TRACERS?: number;
   MS_GRAFANA_TRACERS_DEBUG?: number;
 }
 
 /**
  * Initialization opentelemetry
  */
-export default (constants: IConfig) => {
+export default async (constants: IConfig): Promise<opentelemetry.NodeSDK | undefined> => {
   const {
     MS_NAME,
     MS_ENABLE_GRAFANA_TRACERS,
     MS_URL_GRAFANA_AGENT_TRACERS,
+    MS_URL_SRV_GRAFANA_AGENT_TRACERS,
     MS_GRAFANA_TRACERS_DEBUG,
   } = constants;
+
+  let OTLP_URL = undefined;
+
+  if (MS_URL_GRAFANA_AGENT_TRACERS) {
+    OTLP_URL = MS_URL_SRV_GRAFANA_AGENT_TRACERS
+      ? await ResolveSrv(MS_URL_GRAFANA_AGENT_TRACERS)
+      : MS_URL_GRAFANA_AGENT_TRACERS;
+  }
 
   if (!MS_ENABLE_GRAFANA_TRACERS) {
     return;
@@ -35,7 +46,7 @@ export default (constants: IConfig) => {
   }
 
   const sdk = new opentelemetry.NodeSDK({
-    traceExporter: new OTLPTraceExporter({ url: MS_URL_GRAFANA_AGENT_TRACERS }),
+    traceExporter: new OTLPTraceExporter({ url: OTLP_URL }),
     instrumentations: [
       new HttpInstrumentation(),
       new ExpressInstrumentation(),
