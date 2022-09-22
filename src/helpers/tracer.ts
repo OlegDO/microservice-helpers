@@ -11,10 +11,10 @@ import ResolveSrv from '@helpers/resolve-srv';
 
 interface IConfig {
   MS_NAME: string;
-  MS_ENABLE_GRAFANA_TRACERS?: number;
-  MS_URL_GRAFANA_AGENT_TRACERS?: string;
-  MS_URL_SRV_GRAFANA_AGENT_TRACERS?: number;
-  MS_GRAFANA_TRACERS_DEBUG?: number;
+  MS_OPENTELEMETRY_ENABLE?: number;
+  MS_OPENTELEMETRY_OTLP_URL?: string;
+  MS_OPENTELEMETRY_OTLP_URL_SRV?: number;
+  MS_OPENTELEMETRY_DEBUG?: number;
 }
 
 /**
@@ -23,25 +23,25 @@ interface IConfig {
 export default async (constants: IConfig): Promise<opentelemetry.NodeSDK | undefined> => {
   const {
     MS_NAME,
-    MS_ENABLE_GRAFANA_TRACERS,
-    MS_URL_GRAFANA_AGENT_TRACERS,
-    MS_URL_SRV_GRAFANA_AGENT_TRACERS,
-    MS_GRAFANA_TRACERS_DEBUG,
+    MS_OPENTELEMETRY_ENABLE,
+    MS_OPENTELEMETRY_OTLP_URL,
+    MS_OPENTELEMETRY_OTLP_URL_SRV,
+    MS_OPENTELEMETRY_DEBUG,
   } = constants;
 
   let OTLP_URL = undefined;
 
-  if (MS_URL_GRAFANA_AGENT_TRACERS) {
-    OTLP_URL = MS_URL_SRV_GRAFANA_AGENT_TRACERS
-      ? await ResolveSrv(MS_URL_GRAFANA_AGENT_TRACERS)
-      : MS_URL_GRAFANA_AGENT_TRACERS;
+  if (MS_OPENTELEMETRY_OTLP_URL) {
+    OTLP_URL = MS_OPENTELEMETRY_OTLP_URL_SRV
+      ? await ResolveSrv(MS_OPENTELEMETRY_OTLP_URL)
+      : MS_OPENTELEMETRY_OTLP_URL;
   }
 
-  if (!MS_ENABLE_GRAFANA_TRACERS) {
+  if (!MS_OPENTELEMETRY_ENABLE) {
     return;
   }
 
-  if (MS_GRAFANA_TRACERS_DEBUG) {
+  if (MS_OPENTELEMETRY_DEBUG) {
     diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
   }
 
