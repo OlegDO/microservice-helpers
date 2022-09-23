@@ -34,6 +34,12 @@ describe('helpers/resolve-srv', () => {
     expect(result).to.equal('https://example.com:8002');
   });
 
+  it('should correct resolve srv record with protocol and path', async () => {
+    const result = await ResolveSrv('https://example.local/sample-v1/path');
+
+    expect(result).to.equal('https://example.com:8002/sample-v1/path');
+  });
+
   it('should throw empty list error', async () => {
     mockedAddresses = [];
 

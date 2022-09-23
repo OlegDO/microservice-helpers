@@ -10,6 +10,7 @@ import _ from 'lodash';
 const ResolveSrv = (srvRecord: string): Promise<string> =>
   new Promise((resolve, reject) => {
     const [protocol, host] = srvRecord.split('://');
+    const path = host?.split('/')?.slice(1).join('/');
 
     dns.resolveSrv(host || protocol, (err, addresses) => {
       if (err) {
@@ -24,7 +25,9 @@ const ResolveSrv = (srvRecord: string): Promise<string> =>
         return reject('Unable to resolve srv record: empty list.');
       }
 
-      return resolve(`${host ? `${protocol}://` : ''}${resolvedHost}:${resolvedPort}`);
+      return resolve(
+        `${host ? `${protocol}://` : ''}${resolvedHost}:${resolvedPort}${path ? `/${path}` : ''}`,
+      );
     });
   });
 
