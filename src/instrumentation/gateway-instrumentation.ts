@@ -1,0 +1,233 @@
+/* eslint-disable @typescript-eslint/unbound-method,@typescript-eslint/no-this-alias,unicorn/no-this-assignment,@typescript-eslint/no-unused-vars */
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import * as http from 'http';
+import {
+  trace,
+  context,
+  Span,
+  SpanKind,
+  ROOT_CONTEXT,
+  propagation,
+  SpanOptions,
+  Context,
+  SpanStatusCode,
+  HrTime,
+} from '@opentelemetry/api';
+import { MetricAttributes } from '@opentelemetry/api-metrics';
+import { hrTime, setRPCMetadata, RPCType } from '@opentelemetry/core';
+import {
+  InstrumentationBase,
+  InstrumentationNodeModuleDefinition,
+  isWrapped,
+  safeExecuteInTheMiddle,
+} from '@opentelemetry/instrumentation';
+import * as types from '@opentelemetry/instrumentation/build/src/types';
+import type * as express from 'express';
+
+type ResponseEndArgs =
+  | [((() => void) | undefined)?]
+  | [unknown, ((() => void) | undefined)?]
+  | [unknown, string, ((() => void) | undefined)?];
+
+/**
+ * Handler request error
+ * @private
+ */
+const setSpanWithError = (span: Span, error: Error): void => {
+  const { message, name } = error;
+
+  span.setAttributes({
+    'http.error_name': name,
+    'http.error_message': message,
+  });
+
+  span.setStatus({ code: SpanStatusCode.ERROR, message });
+  span.recordException(error);
+};
+
+const instrumentationName = '@lomray/opentelemetry-microservice-gateway';
+const version = '1.0.0';
+
+class GatewayInstrumentation extends InstrumentationBase<typeof express> {
+  /** keep track on spans not ended */
+  private readonly _spanNotEnded: WeakSet<Span> = new WeakSet<Span>();
+
+  constructor(config: types.InstrumentationConfig = {}) {
+    super(instrumentationName, version, config);
+  }
+
+  init() {
+    return [
+      new InstrumentationNodeModuleDefinition<typeof http>(
+        'http',
+        ['*'],
+        (moduleExports, moduleVersion) => {
+          this._diag.debug(`applying patch (lib version is ${moduleVersion || 'unknown'})`);
+
+          if (isWrapped(moduleExports.Server.prototype.emit)) {
+            this._unwrap(moduleExports.Server.prototype, 'emit');
+          }
+
+          this._wrap(
+            moduleExports.Server.prototype,
+            'emit',
+            this._getPatchIncomingRequestFunction('http'),
+          );
+
+          return moduleExports;
+        },
+        (moduleExports) => {
+          if (moduleExports === undefined) {
+            return;
+          }
+
+          this._diag.debug(`removing patch`);
+          this._unwrap(moduleExports.Server.prototype, 'emit');
+        },
+      ),
+    ];
+  }
+
+  /**
+   * Creates spans for incoming requests, restoring spans' context if applied.
+   */
+  protected _getPatchIncomingRequestFunction(component: 'http' | 'https') {
+    return (
+      original: (event: string, ...args: unknown[]) => boolean,
+    ): ((this: unknown, event: string, ...args: unknown[]) => boolean) =>
+      this._incomingRequestFunction(component, original);
+  }
+
+  private _startHttpSpan(name: string, options: SpanOptions, ctx?: Context) {
+    const span = this.tracer.startSpan(name, options, ctx || context.active());
+
+    this._spanNotEnded.add(span);
+
+    return span;
+  }
+
+  private _closeHttpSpan(
+    span: Span,
+    spanKind: SpanKind,
+    startTime: HrTime,
+    metricAttributes: MetricAttributes,
+  ) {
+    if (!this._spanNotEnded.has(span)) {
+      return;
+    }
+
+    span.end();
+    this._spanNotEnded.delete(span);
+  }
+
+  private _incomingRequestFunction(
+    component: 'http' | 'https',
+    original: (event: string, ...args: unknown[]) => boolean,
+  ) {
+    const instrumentation = this;
+
+    return function incomingRequest(this: unknown, event: string, ...args: unknown[]): boolean {
+      // Only traces request events
+      if (event !== 'request') {
+        return Reflect.apply(original, this, [event, ...args]);
+      }
+
+      const request = args[0] as http.IncomingMessage;
+      const response = args[1] as http.ServerResponse;
+      const method = request.method || 'GET';
+
+      instrumentation._diag.debug(`${component} instrumentation incomingRequest`);
+
+      const { headers } = request;
+
+      const spanAttributes = {
+        component,
+        serverName: 'gateway-server',
+      };
+
+      const spanOptions = {
+        kind: SpanKind.SERVER,
+        attributes: spanAttributes,
+      };
+      const metricAttributes = {};
+      const startTime = hrTime();
+
+      const ctx = propagation.extract(ROOT_CONTEXT, headers);
+      const span = instrumentation._startHttpSpan(
+        `${component.toLocaleUpperCase()} ${method}`,
+        spanOptions,
+        ctx,
+      );
+      const rpcMetadata = {
+        type: RPCType.HTTP,
+        span,
+      };
+
+      return context.with(setRPCMetadata(trace.setSpan(ctx, span), rpcMetadata), () => {
+        context.bind(context.active(), request);
+        context.bind(context.active(), response);
+
+        // instrumentation._headerCapture.server.captureRequestHeaders(span, header => request.headers[header]);
+
+        // Wraps end (inspired by:
+        // https://github.com/GoogleCloudPlatform/cloud-trace-nodejs/blob/master/src/instrumentations/instrumentation-connect.ts#L75)
+        const originalEnd = response.end;
+
+        response.end = function (this: http.ServerResponse, ..._args: ResponseEndArgs) {
+          response.end = originalEnd;
+          // Cannot pass args of type ResponseEndArgs,
+          const returned = safeExecuteInTheMiddle(
+            // eslint-disable-next-line prefer-rest-params
+            () => response.end.apply(this, arguments as never),
+            (error) => {
+              if (error) {
+                setSpanWithError(span, error);
+                instrumentation._closeHttpSpan(span, SpanKind.SERVER, startTime, metricAttributes);
+                throw error;
+              }
+            },
+          );
+
+          const attributes = {};
+
+          // instrumentation._headerCapture.server.captureResponseHeaders(span, header => response.getHeader(header));
+
+          span.setAttributes(attributes).setStatus({ code: SpanStatusCode.OK });
+
+          instrumentation._closeHttpSpan(span, SpanKind.SERVER, startTime, metricAttributes);
+
+          return returned;
+        };
+
+        return safeExecuteInTheMiddle(
+          () => Reflect.apply(original, this, [event, ...args]),
+          // eslint-disable-next-line sonarjs/no-identical-functions
+          (error) => {
+            if (error) {
+              setSpanWithError(span, error);
+              instrumentation._closeHttpSpan(span, SpanKind.SERVER, startTime, metricAttributes);
+              throw error;
+            }
+          },
+        );
+      });
+    };
+  }
+}
+
+export default GatewayInstrumentation;

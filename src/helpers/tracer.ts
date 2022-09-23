@@ -2,13 +2,14 @@ import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
 import { Resource } from '@opentelemetry/resources';
 import opentelemetry from '@opentelemetry/sdk-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import ResolveSrv from '@helpers/resolve-srv';
+import GatewayInstrumentation from '@instrumentation/gateway-instrumentation';
+import MicroserviceInstrumentation from '@instrumentation/microservice-instrumentation';
 
 interface IConfig {
   MS_NAME: string;
@@ -17,12 +18,13 @@ interface IConfig {
   MS_OPENTELEMETRY_OTLP_URL_SRV?: number;
   MS_OPENTELEMETRY_DEBUG?: number;
   version?: string;
+  isGateway?: boolean;
 }
 
 /**
  * Initialization opentelemetry
  */
-export default (constants: IConfig): void => {
+export default (constants: IConfig): Promise<void> | void => {
   const {
     MS_NAME,
     MS_OPENTELEMETRY_ENABLE,
@@ -30,6 +32,7 @@ export default (constants: IConfig): void => {
     MS_OPENTELEMETRY_OTLP_URL_SRV,
     MS_OPENTELEMETRY_DEBUG,
     version = '1.0.0',
+    isGateway = false,
   } = constants;
 
   if (!MS_OPENTELEMETRY_ENABLE) {
@@ -42,14 +45,15 @@ export default (constants: IConfig): void => {
 
   registerInstrumentations({
     instrumentations: [
-      new HttpInstrumentation(),
+      ...[isGateway ? [new GatewayInstrumentation()] : []],
+      new MicroserviceInstrumentation(),
       new ExpressInstrumentation(),
       new WinstonInstrumentation(),
       new PgInstrumentation(),
     ],
   });
 
-  void (async () => {
+  return (async () => {
     let OTLP_URL = undefined;
 
     if (MS_OPENTELEMETRY_OTLP_URL) {

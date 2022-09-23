@@ -35,7 +35,8 @@ const Log = createLogger({
  */
 Log.enableLokiTransport = (options: ILokiTransportOptions) => {
   const lokiFormat = format((info) => {
-    const { message } = info;
+    const { message, trace_id: traceId, span_id: spanId, trace_flags: traceFlags } = info;
+    const traceInfo = { traceId, spanId, traceFlags };
 
     // Detect microservice log
     if (message.includes('<--') || message.includes('-->')) {
@@ -59,13 +60,14 @@ Log.enableLokiTransport = (options: ILokiTransportOptions) => {
 
       return {
         ...info,
-        labels: { type: reqType, ms: reqMs, method, error, internal },
+        labels: { type: reqType, ms: reqMs, method, error, internal, ...traceInfo },
         message: JSON.stringify({
           id,
           body,
           method,
           internal,
           reqTime: Number(reqTime) || undefined,
+          ...traceInfo,
         }),
       };
     }

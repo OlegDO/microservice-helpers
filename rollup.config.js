@@ -49,6 +49,9 @@ export default {
     '@opentelemetry/resources',
     '@opentelemetry/sdk-node',
     '@opentelemetry/semantic-conventions',
+    '@opentelemetry/instrumentation',
+    '@opentelemetry/core',
+    '@opentelemetry/api-metrics',
   ],
   plugins: [
     peerDepsExternal(),

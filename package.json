@@ -35,14 +35,13 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@lomray/microservice-nodejs-lib": "^2.12.0",
+    "@lomray/microservice-nodejs-lib": "^2.12.2",
     "@lomray/microservice-remote-middleware": "^1.7.1",
     "@lomray/microservices-types": "^1.5.0",
     "@lomray/typeorm-json-query": "^1.7.1",
     "@opentelemetry/api": "^1.2.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.33.0",
     "@opentelemetry/instrumentation-express": "^0.31.1",
-    "@opentelemetry/instrumentation-http": "^0.33.0",
     "@opentelemetry/instrumentation-pg": "^0.31.1",
     "@opentelemetry/instrumentation-winston": "^0.30.0",
     "@opentelemetry/resources": "^1.7.0",
