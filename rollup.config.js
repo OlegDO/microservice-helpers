@@ -25,6 +25,7 @@ export default {
     'winston',
     'firebase-admin',
     'fs',
+    'dns',
     'typeorm',
     'class-validator',
     'class-transformer',

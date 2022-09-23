@@ -1,5 +1,6 @@
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
@@ -15,18 +16,20 @@ interface IConfig {
   MS_OPENTELEMETRY_OTLP_URL?: string;
   MS_OPENTELEMETRY_OTLP_URL_SRV?: number;
   MS_OPENTELEMETRY_DEBUG?: number;
+  version?: string;
 }
 
 /**
  * Initialization opentelemetry
  */
-export default async (constants: IConfig): Promise<opentelemetry.NodeSDK | undefined> => {
+export default async (constants: IConfig): Promise<void> => {
   const {
     MS_NAME,
     MS_OPENTELEMETRY_ENABLE,
     MS_OPENTELEMETRY_OTLP_URL,
     MS_OPENTELEMETRY_OTLP_URL_SRV,
     MS_OPENTELEMETRY_DEBUG,
+    version = '1.0.0',
   } = constants;
 
   let OTLP_URL = undefined;
@@ -45,16 +48,20 @@ export default async (constants: IConfig): Promise<opentelemetry.NodeSDK | undef
     diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
   }
 
-  const sdk = new opentelemetry.NodeSDK({
-    traceExporter: new OTLPTraceExporter({ url: OTLP_URL }),
+  registerInstrumentations({
     instrumentations: [
       new HttpInstrumentation(),
       new ExpressInstrumentation(),
       new WinstonInstrumentation(),
       new PgInstrumentation(),
     ],
+  });
+
+  const sdk = new opentelemetry.NodeSDK({
+    traceExporter: new OTLPTraceExporter({ url: OTLP_URL }),
     resource: new Resource({
       [SemanticResourceAttributes.SERVICE_NAME]: MS_NAME,
+      [SemanticResourceAttributes.SERVICE_VERSION]: version,
     }),
   });
 
@@ -70,7 +77,8 @@ export default async (constants: IConfig): Promise<opentelemetry.NodeSDK | undef
       .finally(() => process.exit(0));
   });
 
-  void sdk.start().then(() => console.log('opentelemetry initialized.'));
-
-  return sdk;
+  return sdk
+    .start()
+    .then(() => console.log('opentelemetry initialized.'))
+    .catch((err) => console.log('Error start opentelemetry.', err));
 };
