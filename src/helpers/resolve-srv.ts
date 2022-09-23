@@ -10,9 +10,10 @@ import _ from 'lodash';
 const ResolveSrv = (srvRecord: string): Promise<string> =>
   new Promise((resolve, reject) => {
     const [protocol, host] = srvRecord.split('://');
-    const path = host?.split('/')?.slice(1).join('/');
+    const [host2, ...paths] = host?.split('/') || [];
+    const path = paths?.join('/');
 
-    dns.resolveSrv(host || protocol, (err, addresses) => {
+    dns.resolveSrv(path ? host2 : host || protocol, (err, addresses) => {
       if (err) {
         return reject(err);
       }
