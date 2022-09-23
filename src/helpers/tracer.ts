@@ -22,7 +22,7 @@ interface IConfig {
 /**
  * Initialization opentelemetry
  */
-export default async (constants: IConfig): Promise<void> => {
+export default (constants: IConfig): void => {
   const {
     MS_NAME,
     MS_OPENTELEMETRY_ENABLE,
@@ -31,14 +31,6 @@ export default async (constants: IConfig): Promise<void> => {
     MS_OPENTELEMETRY_DEBUG,
     version = '1.0.0',
   } = constants;
-
-  let OTLP_URL = undefined;
-
-  if (MS_OPENTELEMETRY_OTLP_URL) {
-    OTLP_URL = MS_OPENTELEMETRY_OTLP_URL_SRV
-      ? await ResolveSrv(MS_OPENTELEMETRY_OTLP_URL)
-      : MS_OPENTELEMETRY_OTLP_URL;
-  }
 
   if (!MS_OPENTELEMETRY_ENABLE) {
     return;
@@ -57,28 +49,38 @@ export default async (constants: IConfig): Promise<void> => {
     ],
   });
 
-  const sdk = new opentelemetry.NodeSDK({
-    traceExporter: new OTLPTraceExporter({ url: OTLP_URL }),
-    resource: new Resource({
-      [SemanticResourceAttributes.SERVICE_NAME]: MS_NAME,
-      [SemanticResourceAttributes.SERVICE_VERSION]: version,
-    }),
-  });
+  void (async () => {
+    let OTLP_URL = undefined;
 
-  // You can also use the shutdown method to gracefully shut down the SDK before process shutdown
-  // or on some operating system signal.
-  process.on('SIGTERM', () => {
+    if (MS_OPENTELEMETRY_OTLP_URL) {
+      OTLP_URL = MS_OPENTELEMETRY_OTLP_URL_SRV
+        ? await ResolveSrv(MS_OPENTELEMETRY_OTLP_URL)
+        : MS_OPENTELEMETRY_OTLP_URL;
+    }
+
+    const sdk = new opentelemetry.NodeSDK({
+      traceExporter: new OTLPTraceExporter({ url: OTLP_URL }),
+      resource: new Resource({
+        [SemanticResourceAttributes.SERVICE_NAME]: MS_NAME,
+        [SemanticResourceAttributes.SERVICE_VERSION]: version,
+      }),
+    });
+
+    // You can also use the shutdown method to gracefully shut down the SDK before process shutdown
+    // or on some operating system signal.
+    process.on('SIGTERM', () => {
+      sdk
+        .shutdown()
+        .then(
+          () => console.log('opentelemetry shut down successfully.'),
+          (err) => console.log('Error shutting down opentelemetry.', err),
+        )
+        .finally(() => process.exit(0));
+    });
+
     sdk
-      .shutdown()
-      .then(
-        () => console.log('opentelemetry shut down successfully.'),
-        (err) => console.log('Error shutting down opentelemetry.', err),
-      )
-      .finally(() => process.exit(0));
-  });
-
-  return sdk
-    .start()
-    .then(() => console.log('opentelemetry initialized.'))
-    .catch((err) => console.log('Error start opentelemetry.', err));
+      .start()
+      .then(() => console.log('opentelemetry initialized.'))
+      .catch((err) => console.log('Error start opentelemetry.', err));
+  })();
 };
