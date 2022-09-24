@@ -16,12 +16,6 @@ export type ILokiTransportOptions = ConstructorParameters<typeof LokiTransport>[
 const secretsFormatter = format((info) => redact(info) as TransformableInfo);
 
 const Log = createLogger({
-  levels: {
-    info: 0,
-    debug: 1,
-    alert: 2,
-    error: 3,
-  },
   level: 'info',
   format: format.json(),
   defaultMeta: {},
