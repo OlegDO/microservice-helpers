@@ -196,6 +196,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
 
         const ctx = propagation.extract(ROOT_CONTEXT, headers);
         const attributes = {
+          body: JSON.stringify(params || {}),
           [SemanticAttributes.HTTP_URL]: method,
           [SemanticAttributes.HTTP_METHOD]: 'POST',
           [SemanticAttributes.HTTP_TARGET]: '/',
@@ -262,6 +263,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
         const operationName = `MS REQUEST - ${method}`;
         const startTime = hrTime();
         const attributes = {
+          body: JSON.stringify(data || {}),
           [SemanticAttributes.HTTP_URL]: method,
           [SemanticAttributes.HTTP_METHOD]: 'POST',
           [SemanticAttributes.HTTP_TARGET]: '/',

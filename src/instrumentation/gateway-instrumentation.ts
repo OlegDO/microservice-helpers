@@ -158,6 +158,7 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
       const spanAttributes = {
         component,
         serverName: 'gateway-server',
+        headers: typeof headers === 'object' ? JSON.stringify(headers) : '',
       };
 
       const spanOptions = {
