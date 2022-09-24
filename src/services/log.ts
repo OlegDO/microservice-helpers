@@ -7,6 +7,7 @@ declare module 'winston' {
   // eslint-disable-next-line @typescript-eslint/naming-convention
   interface Logger {
     enableLokiTransport: (config: ILokiTransportOptions) => void;
+    setConsoleLogLevel: (level: string) => void;
   }
 }
 
@@ -15,6 +16,12 @@ export type ILokiTransportOptions = ConstructorParameters<typeof LokiTransport>[
 const secretsFormatter = format((info) => redact(info) as TransformableInfo);
 
 const Log = createLogger({
+  levels: {
+    info: 0,
+    debug: 1,
+    alert: 2,
+    error: 3,
+  },
   level: 'info',
   format: format.json(),
   defaultMeta: {},
@@ -29,6 +36,14 @@ const Log = createLogger({
     }),
   ],
 });
+
+Log.setConsoleLogLevel = (level: string) => {
+  Log.transports.find((transport) => {
+    if (transport instanceof transports.Console) {
+      transport.level = level;
+    }
+  });
+};
 
 /**
  * Add grafana loki transport

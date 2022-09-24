@@ -30,6 +30,7 @@ export interface IStartConfig {
   remoteMiddleware?: TRemoteMiddleware;
   remoteConfig?: { isEnable?: boolean; msConfigName?: string };
   logGrafana?: ILokiTransportOptions | boolean;
+  logConsoleLevel?: string;
   hooks?: {
     beforeCreateMicroservice?: () => Promise<void> | void;
     afterCreateMicroservice?: (ms: Microservice | Gateway) => Promise<void> | void;
@@ -56,6 +57,7 @@ const start = async ({
   remoteMiddleware,
   remoteConfig,
   logGrafana,
+  logConsoleLevel,
   hooks: {
     beforeCreateMicroservice,
     afterCreateMicroservice,
@@ -64,14 +66,18 @@ const start = async ({
   } = {},
 }: IStartConfig): Promise<void> => {
   try {
-    await beforeCreateMicroservice?.();
-
     Log.defaultMeta = {
       ...Log.defaultMeta,
       service: msOptions.name,
       msOptions,
       remoteMiddleware,
     };
+
+    if (logConsoleLevel) {
+      Log.setConsoleLogLevel(logConsoleLevel);
+    }
+
+    await beforeCreateMicroservice?.();
 
     const microservice = (type === 'gateway' ? Gateway : Microservice).create(msOptions, msParams);
 

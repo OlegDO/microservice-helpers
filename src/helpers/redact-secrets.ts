@@ -25,6 +25,8 @@ const sensitiveValues = [
   /"(pass)":"[^"]+"/i,
   /"(secret)":"[^"]+"/i,
   /"(token)":"[^"]+"/i,
+  /"(authorization)":"Bearer\s[^"]+"/i,
+  /"(authorization)":"Basic\s[^"]+"/i,
   /"(api[-._]?key)":"[^"]+"/i,
   /"(session[-._]?id)":"[^"]+"/i,
   /"(private[-._]?key)":"[^"]+"/i,
