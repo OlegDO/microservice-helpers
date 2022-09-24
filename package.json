@@ -37,7 +37,7 @@
   "dependencies": {
     "@lomray/microservice-nodejs-lib": "^2.12.3",
     "@lomray/microservice-remote-middleware": "^1.7.2",
-    "@lomray/microservices-types": "^1.6.0",
+    "@lomray/microservices-types": "^1.6.1",
     "@lomray/typeorm-json-query": "^1.7.3",
     "@opentelemetry/api": "^1.2.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.33.0",
