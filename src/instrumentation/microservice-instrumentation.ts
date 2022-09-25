@@ -263,16 +263,16 @@ class MicroserviceInstrumentation extends InstrumentationBase {
         const operationName = `MS REQUEST - ${method}`;
         const startTime = hrTime();
         const attributes = {
-          body: JSON.stringify(data || {}),
           [SemanticAttributes.HTTP_URL]: method,
+          [SemanticAttributes.HTTP_USER_AGENT]: userAgent,
           [SemanticAttributes.HTTP_METHOD]: 'POST',
           [SemanticAttributes.HTTP_TARGET]: '/',
           [SemanticAttributes.NET_PEER_NAME]: hostname,
           [SemanticAttributes.HTTP_HOST]: `${hostname}:${port}`,
           [SemanticAttributes.HTTP_SCHEME]: scheme,
           [SemanticAttributes.HTTP_CLIENT_IP]: clientIp,
-          [SemanticAttributes.HTTP_USER_AGENT]: userAgent,
           [SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH]: contentLength,
+          body: JSON.stringify(data || {}),
         };
         let metricAttributes: MetricAttributes = {
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
