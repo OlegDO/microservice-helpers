@@ -487,7 +487,7 @@ const CACHE_KEYS = {
 /**
  * Get query cache key
  */
-const getCacheKey = (
+const getCrudCacheKey = (
   query: SelectQueryBuilder<any>,
   prefix: string,
   { hasOnlyAlias = false, hasOnlyWhere = false } = {},
@@ -527,7 +527,7 @@ const resetCache = (repository: Repository<any>, keys: string[] = []): Promise<D
   const qb = repository.manager.createQueryBuilder().delete().from(cacheTable);
 
   keys.forEach((key, i) => {
-    const identifier = getCacheKey(query, key, { hasOnlyAlias: true });
+    const identifier = getCrudCacheKey(query, key, { hasOnlyAlias: true });
 
     qb.orWhere(`${qb.escape('identifier')} LIKE :identifier${i}`, {
       [`identifier${i}`]: `${identifier}:%`,
@@ -555,7 +555,7 @@ const getQueryCount = async <TEntity>(
   }
 
   if (cache) {
-    query.cache(getCacheKey(query, CACHE_KEYS.count, { hasOnlyWhere: true }), cache);
+    query.cache(getCrudCacheKey(query, CACHE_KEYS.count, { hasOnlyWhere: true }), cache);
   }
 
   return {
@@ -576,7 +576,7 @@ const getQueryList = async <TEntity>(
   }
 
   if (listCache) {
-    query.cache(getCacheKey(query, CACHE_KEYS.list), listCache);
+    query.cache(getCrudCacheKey(query, CACHE_KEYS.list), listCache);
   }
 
   if (!isWithCount) {
@@ -591,7 +591,10 @@ const getQueryList = async <TEntity>(
     const countQuery = query.clone();
 
     if (countCache) {
-      countQuery.cache(getCacheKey(query, CACHE_KEYS.count, { hasOnlyWhere: true }), countCache);
+      countQuery.cache(
+        getCrudCacheKey(query, CACHE_KEYS.count, { hasOnlyWhere: true }),
+        countCache,
+      );
     }
 
     [list, count] = await Promise.all([query.getMany(), countQuery.getCount()]);
@@ -693,7 +696,7 @@ const viewDefaultHandler = async <TEntity>(
   }
 
   if (cache) {
-    query.cache(getCacheKey(query, CACHE_KEYS.view), cache);
+    query.cache(getCrudCacheKey(query, CACHE_KEYS.view), cache);
   }
 
   const targets = await query.take(2).getMany();
@@ -1551,4 +1554,5 @@ export {
   RestoreRequestParams,
   RestoreOutputParams,
   CACHE_KEYS,
+  getCrudCacheKey,
 };
