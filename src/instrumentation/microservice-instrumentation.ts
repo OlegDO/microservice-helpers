@@ -25,23 +25,14 @@ import { SemanticAttributes } from '@opentelemetry/semantic-conventions';
 
 type TMicroservices = typeof MsLib;
 type TSendRequest = TMicroservices['AbstractMicroservice']['prototype']['sendRequest'];
-type THandleTask = TMicroservices['AbstractMicroservice']['prototype']['getTask'];
-type THandleResponse = TMicroservices['AbstractMicroservice']['prototype']['sendResponse'];
 type TExecuteRequest = TMicroservices['AbstractMicroservice']['prototype']['executeRequest'];
-
-type ITracerContext = {
-  tracer: {
-    context: Context;
-    onEnd: () => void;
-  };
-};
+type TExecuteEvent = TMicroservices['AbstractMicroservice']['prototype']['executeEvent'];
 
 type TMs = TMicroservices & {
   AbstractMicroservice: {
     prototype: {
-      getTask: THandleTask;
-      sendResponse: THandleResponse;
       executeRequest: TExecuteRequest;
+      executeEvent: TExecuteEvent;
     };
   };
 };
@@ -107,22 +98,6 @@ class MicroserviceInstrumentation extends InstrumentationBase {
 
           this._wrap(lib.AbstractMicroservice.prototype, 'sendRequest', this._getOutgoingRequest());
 
-          if (isWrapped(lib.AbstractMicroservice.prototype['getTask'])) {
-            this._unwrap(lib.AbstractMicroservice.prototype, 'getTask');
-          }
-
-          this._wrap(lib.AbstractMicroservice.prototype, 'getTask', this._getIncomingRequest());
-
-          if (isWrapped(lib.AbstractMicroservice.prototype['sendResponse'])) {
-            this._unwrap(lib.AbstractMicroservice.prototype, 'sendResponse');
-          }
-
-          this._wrap(
-            lib.AbstractMicroservice.prototype,
-            'sendResponse',
-            this._getIncomingResponse(),
-          );
-
           if (isWrapped(lib.AbstractMicroservice.prototype['executeRequest'])) {
             this._unwrap(lib.AbstractMicroservice.prototype, 'executeRequest');
           }
@@ -133,6 +108,18 @@ class MicroserviceInstrumentation extends InstrumentationBase {
             this._getExecuteRequest(),
           );
 
+          if (isWrapped(lib.AbstractMicroservice.eventPublish)) {
+            this._unwrap(lib.AbstractMicroservice, 'eventPublish');
+          }
+
+          this._wrap(lib.AbstractMicroservice, 'eventPublish', this._getPublishEvent());
+
+          if (isWrapped(lib.AbstractMicroservice.prototype['executeEvent'])) {
+            this._unwrap(lib.AbstractMicroservice.prototype, 'executeEvent');
+          }
+
+          this._wrap(lib.AbstractMicroservice.prototype, 'executeEvent', this._getExecuteEvent());
+
           return lib;
         },
         (lib) => {
@@ -141,111 +128,94 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           }
 
           this._unwrap(lib.AbstractMicroservice.prototype, 'sendRequest');
-          this._unwrap(lib.AbstractMicroservice.prototype, 'sendResponse');
           this._unwrap(lib.AbstractMicroservice.prototype, 'executeRequest');
-          this._unwrap(lib.AbstractMicroservice.prototype, 'getTask');
+          this._unwrap(lib.AbstractMicroservice, 'eventPublish');
+          this._unwrap(lib.AbstractMicroservice.prototype, 'executeEvent');
         },
       ),
     ];
   }
 
-  private _getIncomingResponse() {
-    return (original: THandleResponse) =>
-      function incomingResponse(this: never, ...args: Parameters<typeof original>) {
-        const task = args[2] as Parameters<typeof original>[2] & ITracerContext;
-
-        // done request
-        task?.tracer.onEnd();
-
-        return original.apply(this, args);
-      };
-  }
-
+  /**
+   * Handle incoming microservice task
+   * @private
+   */
   private _getExecuteRequest() {
-    return (original: TExecuteRequest) =>
-      function executeRequest(this: never, ...args: Parameters<typeof original>) {
-        const task = args[0] as Parameters<typeof original>[0] & ITracerContext;
-
-        return context.with(task?.tracer.context, () =>
-          safeExecuteInTheMiddleAsync(() => original.apply(this, args), handleOriginalError),
-        );
-      };
-  }
-
-  private _getIncomingRequest() {
-    return (original: THandleTask) => {
+    return (original: TExecuteRequest) => {
       const instrumentation = this;
 
-      return async function incomingRequest(this: never, ...args: Parameters<typeof original>) {
-        const request = await safeExecuteInTheMiddleAsync(
-          () => original.apply(this, args),
-          handleOriginalError,
-        );
-
+      return function executeRequest(this: never, ...args: Parameters<typeof original>) {
         instrumentation._diag.debug('instrumentation incoming - request');
 
+        const [task] = args;
+        // this can be request (task) or response (error)
+        const params = (task as MsLib.MicroserviceRequest)?.getParams();
+        const method = (task as MsLib.MicroserviceRequest)?.getMethod();
+        const reqId = (task as MsLib.MicroserviceRequest)?.getId();
+
         const startTime = hrTime();
-        const {
-          // @ts-ignore
-          task: { params, method },
-        } = request as MsLib.ITask;
+        const isError = Boolean(task?.['error'] as MsLib.BaseException);
         const headers = params?.payload?.headers;
         const hostname = params?.payload?.headers?.host;
         const clientIp = params?.payload?.headers?.['x-forwarded-for'];
         const userAgent = params?.payload?.headers?.['user-agent'];
-
-        const ctx = propagation.extract(ROOT_CONTEXT, headers);
         const attributes = {
-          body: JSON.stringify(params || {}),
+          reqId,
           [SemanticAttributes.HTTP_URL]: method,
           [SemanticAttributes.HTTP_METHOD]: 'POST',
           [SemanticAttributes.HTTP_TARGET]: '/',
           [SemanticAttributes.NET_PEER_NAME]: hostname,
           [SemanticAttributes.HTTP_CLIENT_IP]: clientIp,
           [SemanticAttributes.HTTP_USER_AGENT]: userAgent,
+          body: JSON.stringify(params || {}),
         };
         let metricAttributes: MetricAttributes = {
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
           [SemanticAttributes.NET_PEER_NAME]: attributes[SemanticAttributes.NET_PEER_NAME],
         };
+        const ctx = propagation.extract(ROOT_CONTEXT, headers);
         const spanOptions: SpanOptions = {
           kind: SpanKind.SERVER,
           attributes,
         };
         const span = instrumentation._startHttpSpan(
-          `MS INCOME REQUEST - ${(method as string) ?? 'unknown'}`,
+          `MS INCOME REQUEST - ${method ?? 'unknown'}`,
           spanOptions,
           ctx,
         );
         const requestContext = trace.setSpan(ctx, span);
 
-        // request create span
-        return context.with(requestContext, () => {
-          request.task.tracer = {
-            context: requestContext,
-            onEnd: () => {
-              instrumentation._diag.debug('instrumentation incoming - response');
+        return context.with(requestContext, async () => {
+          const response = await safeExecuteInTheMiddleAsync(
+            () => original.apply(this, args),
+            handleOriginalError,
+          );
 
-              const responseAttributes = {
-                [SemanticAttributes.HTTP_STATUS_CODE]: 200,
-              };
+          instrumentation._diag.debug('instrumentation incoming - response');
 
-              metricAttributes = Object.assign(metricAttributes, {
-                [SemanticAttributes.HTTP_STATUS_CODE]:
-                  responseAttributes[SemanticAttributes.HTTP_STATUS_CODE],
-              });
-              span.setAttributes(responseAttributes);
-              span.setStatus({ code: SpanStatusCode.OK });
-              instrumentation._closeHttpSpan(span, SpanKind.SERVER, startTime, metricAttributes);
-            },
+          // done request
+          const responseAttributes = {
+            [SemanticAttributes.HTTP_STATUS_CODE]: isError ? 500 : 200,
           };
 
-          return request;
+          metricAttributes = Object.assign(metricAttributes, {
+            [SemanticAttributes.HTTP_STATUS_CODE]:
+              responseAttributes[SemanticAttributes.HTTP_STATUS_CODE],
+          });
+          span.setAttributes(responseAttributes);
+          span.setStatus({ code: SpanStatusCode.OK });
+          instrumentation._closeHttpSpan(span, SpanKind.SERVER, startTime, metricAttributes);
+
+          return response;
         });
       };
     };
   }
 
+  /**
+   * Handle outgoing microservice request
+   * @private
+   */
   private _getOutgoingRequest() {
     return (original: TSendRequest) => {
       const instrumentation = this;
@@ -301,9 +271,9 @@ class MicroserviceInstrumentation extends InstrumentationBase {
               }
             },
           );
-
+          const isError = Boolean(response?.error);
           const responseAttributes = {
-            [SemanticAttributes.HTTP_STATUS_CODE]: 200,
+            [SemanticAttributes.HTTP_STATUS_CODE]: isError ? 500 : 200,
           };
 
           metricAttributes = Object.assign(metricAttributes, {
@@ -315,6 +285,150 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           instrumentation._closeHttpSpan(span, SpanKind.CLIENT, startTime, metricAttributes);
 
           instrumentation._diag.debug('instrumentation outgoing - response');
+
+          return response;
+        });
+      };
+    };
+  }
+
+  /**
+   * Handle microservice publish event
+   * @private
+   */
+  private _getPublishEvent() {
+    return (original: TMicroservices['AbstractMicroservice']['eventPublish']) => {
+      const instrumentation = this;
+
+      return function publishEvent(this: never, ...args: Parameters<typeof original>) {
+        const [eventName, params, payload] = args;
+
+        const operationName = `MS PUBLISH EVENT - ${eventName}`;
+        const startTime = hrTime();
+        const attributes = {
+          [SemanticAttributes.HTTP_URL]: eventName,
+          [SemanticAttributes.HTTP_METHOD]: 'POST',
+          [SemanticAttributes.HTTP_TARGET]: eventName,
+          body: JSON.stringify(params || {}),
+        };
+        let metricAttributes: MetricAttributes = {
+          [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
+        };
+        const spanOptions: SpanOptions = {
+          kind: SpanKind.CLIENT,
+          attributes,
+        };
+        const span = instrumentation._startHttpSpan(operationName, spanOptions);
+        const parentContext = context.active();
+        const requestContext = trace.setSpan(parentContext, span);
+        const payloadWithContext = payload || {};
+
+        propagation.inject(requestContext, payloadWithContext);
+
+        return context.with(requestContext, async () => {
+          instrumentation._diag.debug('instrumentation event - publish');
+
+          const response = await safeExecuteInTheMiddleAsync(
+            () => Reflect.apply(original, this, [eventName, params, payloadWithContext]),
+            (error) => {
+              if (error) {
+                instrumentation._closeHttpSpan(
+                  span,
+                  SpanKind.CLIENT,
+                  startTime,
+                  metricAttributes,
+                  error,
+                );
+                throw error;
+              }
+            },
+          );
+          const isError = Boolean(response?.message);
+          const responseAttributes = {
+            [SemanticAttributes.HTTP_STATUS_CODE]: isError ? 500 : 200,
+            countListeners: isError ? 0 : response,
+          };
+
+          metricAttributes = Object.assign(metricAttributes, {
+            [SemanticAttributes.HTTP_STATUS_CODE]:
+              responseAttributes[SemanticAttributes.HTTP_STATUS_CODE],
+          });
+          span.setAttributes(responseAttributes);
+          span.setStatus({ code: SpanStatusCode.OK });
+          instrumentation._closeHttpSpan(span, SpanKind.CLIENT, startTime, metricAttributes);
+
+          instrumentation._diag.debug('instrumentation event - publish done');
+
+          return response;
+        });
+      };
+    };
+  }
+
+  /**
+   * Execute incoming microservice event
+   * @private
+   */
+  private _getExecuteEvent() {
+    return (original: TExecuteEvent) => {
+      const instrumentation = this;
+
+      return function executeEvent(this: never, ...args: Parameters<typeof original>) {
+        const [data] = args;
+        const eventName = data?.payload?.eventName ?? 'unknown';
+        const payload = data?.payload ?? {};
+
+        const operationName = `MS EXECUTE EVENT - ${eventName}`;
+        const startTime = hrTime();
+        const attributes = {
+          [SemanticAttributes.HTTP_URL]: eventName,
+          [SemanticAttributes.HTTP_METHOD]: 'POST',
+          [SemanticAttributes.HTTP_TARGET]: eventName,
+          body: JSON.stringify(data || {}),
+        };
+        let metricAttributes: MetricAttributes = {
+          [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
+        };
+        const spanOptions: SpanOptions = {
+          kind: SpanKind.SERVER,
+          attributes,
+        };
+        const ctx = propagation.extract(ROOT_CONTEXT, payload);
+        const span = instrumentation._startHttpSpan(operationName, spanOptions, ctx);
+        const requestContext = trace.setSpan(ctx, span);
+
+        return context.with(requestContext, async () => {
+          instrumentation._diag.debug('instrumentation event - execute');
+
+          const response = await safeExecuteInTheMiddleAsync(
+            () => Reflect.apply(original, this, [data]),
+            (error) => {
+              if (error) {
+                instrumentation._closeHttpSpan(
+                  span,
+                  SpanKind.SERVER,
+                  startTime,
+                  metricAttributes,
+                  error,
+                );
+                throw error;
+              }
+            },
+          );
+
+          const responseAttributes = {
+            [SemanticAttributes.HTTP_STATUS_CODE]: 200,
+          };
+
+          metricAttributes = Object.assign(metricAttributes, {
+            [SemanticAttributes.HTTP_STATUS_CODE]:
+              responseAttributes[SemanticAttributes.HTTP_STATUS_CODE],
+          });
+          span.setAttributes(responseAttributes);
+          span.setStatus({ code: SpanStatusCode.OK });
+          instrumentation._closeHttpSpan(span, SpanKind.SERVER, startTime, metricAttributes);
+
+          instrumentation._diag.debug('instrumentation event - execute done');
 
           return response;
         });
@@ -335,7 +449,12 @@ class MicroserviceInstrumentation extends InstrumentationBase {
     spanKind: SpanKind,
     startTime: HrTime,
     metricAttributes: MetricAttributes,
+    error?: Error,
   ) {
+    if (error) {
+      setSpanWithError(span, error);
+    }
+
     if (!this._spanNotEnded.has(span)) {
       return;
     }

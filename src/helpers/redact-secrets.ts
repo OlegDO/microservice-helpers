@@ -25,6 +25,7 @@ const sensitiveValues = [
   /"(pass)":"[^"]+"/i,
   /"(secret)":"[^"]+"/i,
   /"(token)":"[^"]+"/i,
+  /"(file)":"[^"]+"/i, // also remove long base64 strings
   /"(authorization)":"Bearer\s[^"]+"/i,
   /"(authorization)":"Basic\s[^"]+"/i,
   /"(api[-._]?key)":"[^"]+"/i,

@@ -498,14 +498,22 @@ const getCacheKey = (
     return cacheKey;
   }
 
-  const expression = query.getSql().split('WHERE ')[1] ?? '';
+  const [rawQuery, params] = query.getQueryAndParameters();
+  const queryParams = JSON.stringify(params);
+  const expression = rawQuery.split('WHERE ')[1] ?? '';
   const condition = expression?.split(/\s(limit|order|group|having)/i)?.[0] ?? '';
 
   if (hasOnlyWhere) {
-    return `${cacheKey}:${crypto.createHash('md5').update(condition).digest('hex')}`;
+    return `${cacheKey}:${crypto
+      .createHash('md5')
+      .update(`${condition}.${queryParams}`)
+      .digest('hex')}`;
   }
 
-  return `${cacheKey}:${crypto.createHash('md5').update(expression).digest('hex')}`;
+  return `${cacheKey}:${crypto
+    .createHash('md5')
+    .update(`${expression}.${queryParams}`)
+    .digest('hex')}`;
 };
 
 /**

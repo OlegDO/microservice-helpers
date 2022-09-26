@@ -132,7 +132,7 @@ describe('services/endpoint', () => {
       expect(qb.expressionMap.cache).to.be.ok;
       expect(qb.expressionMap.cacheDuration).to.equal(100);
       expect(qb.expressionMap.cacheId).to.equal(
-        'CRUD:count:TestEntity:d41d8cd98f00b204e9800998ecf8427e',
+        'CRUD:count:TestEntity:f732e35ae059c4d42c040e7f26351c10',
       );
       expect(res).to.deep.equal(countResult());
     });
@@ -267,7 +267,7 @@ describe('services/endpoint', () => {
       expect(qb.expressionMap.cache).to.be.ok;
       expect(qb.expressionMap.cacheDuration).to.equal(150);
       expect(qb.expressionMap.cacheId).to.equal(
-        'CRUD:list:TestEntity:d41d8cd98f00b204e9800998ecf8427e',
+        'CRUD:list:TestEntity:f732e35ae059c4d42c040e7f26351c10',
       );
       expect(result).to.deep.equal({ list: [], count: 0 });
     });
@@ -505,7 +505,7 @@ describe('services/endpoint', () => {
       expect(qb.expressionMap.cache).to.be.ok;
       expect(qb.expressionMap.cacheDuration).to.equal(200);
       expect(qb.expressionMap.cacheId).to.equal(
-        'CRUD:view:TestEntity:794e2d0322432a65957b5a6279a3d896',
+        'CRUD:view:TestEntity:e1f61c2febe97b0a1817e6ff9ccf4b6d',
       );
     });
 

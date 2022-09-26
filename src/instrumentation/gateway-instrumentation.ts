@@ -37,6 +37,7 @@ import {
   safeExecuteInTheMiddle,
 } from '@opentelemetry/instrumentation';
 import * as types from '@opentelemetry/instrumentation/build/src/types';
+import { SemanticAttributes } from '@opentelemetry/semantic-conventions';
 import type * as express from 'express';
 
 type ResponseEndArgs =
@@ -192,7 +193,7 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
         response.end = function (this: http.ServerResponse, ..._args: ResponseEndArgs) {
           response.end = originalEnd;
           // Cannot pass args of type ResponseEndArgs,
-          const returned = safeExecuteInTheMiddle(
+          const returned: http.ServerResponse = safeExecuteInTheMiddle(
             // eslint-disable-next-line prefer-rest-params
             () => response.end.apply(this, arguments as never),
             (error) => {
@@ -203,9 +204,17 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
               }
             },
           );
+          const targetMethod: string = returned?.req?.['body']?.method;
+          const responseBody: string = returned?.req?.['body'] ?? '';
 
-          const attributes = {};
+          if (targetMethod) {
+            span.updateName(targetMethod);
+          }
 
+          const attributes = {
+            [SemanticAttributes.HTTP_STATUS_CODE]: returned.statusCode,
+            body: typeof responseBody === 'object' ? JSON.stringify(responseBody) : responseBody,
+          };
           // instrumentation._headerCapture.server.captureResponseHeaders(span, header => response.getHeader(header));
 
           span.setAttributes(attributes).setStatus({ code: SpanStatusCode.OK });
