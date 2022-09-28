@@ -69,7 +69,7 @@ Log.enableLokiTransport = (options: ILokiTransportOptions) => {
 
       return {
         ...info,
-        labels: { type: reqType, ms: reqMs, method, error, internal, ...traceInfo },
+        labels: { type: reqType, ms: reqMs, method, error, internal },
         message: JSON.stringify({
           id,
           body,
