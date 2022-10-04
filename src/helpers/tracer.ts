@@ -11,7 +11,7 @@ import ResolveSrv from '@helpers/resolve-srv';
 import GatewayInstrumentation from '@instrumentation/gateway-instrumentation';
 import MicroserviceInstrumentation from '@instrumentation/microservice-instrumentation';
 
-interface IConfig {
+export interface ITracerConfig {
   MS_NAME: string;
   MS_OPENTELEMETRY_ENABLE?: number;
   MS_OPENTELEMETRY_OTLP_URL?: string;
@@ -24,7 +24,7 @@ interface IConfig {
 /**
  * Initialization opentelemetry
  */
-export default (constants: IConfig): Promise<void> | void => {
+const tracer = (constants: ITracerConfig): Promise<void> | void => {
   const {
     MS_NAME,
     MS_OPENTELEMETRY_ENABLE,
@@ -88,3 +88,5 @@ export default (constants: IConfig): Promise<void> | void => {
       .catch((err) => console.log('Error start opentelemetry.', err));
   })();
 };
+
+export default tracer;

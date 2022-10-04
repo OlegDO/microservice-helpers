@@ -1,6 +1,8 @@
 import typescript from 'rollup-plugin-ts';
 import json from '@rollup/plugin-json';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
+import cleaner from 'rollup-plugin-cleaner';
+import copy from 'rollup-plugin-copy';
 
 export default {
   // build mocks for generate tslib with all helpers
@@ -54,6 +56,11 @@ export default {
     '@opentelemetry/api-metrics',
   ],
   plugins: [
+    cleaner({
+      targets: [
+        './lib/'
+      ]
+    }),
     peerDepsExternal(),
     json(),
     typescript({
@@ -69,5 +76,10 @@ export default {
         ]
       }),
     }),
+    copy({
+      targets: [
+        { src: 'package.json', dest: 'lib' },
+      ]
+    })
   ],
 };
