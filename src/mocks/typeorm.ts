@@ -68,12 +68,22 @@ class EntityManagerMock extends EntityManager {
   }
 }
 
+let customEntities = [];
+let customSubscribers = [];
+
+try {
+  customEntities = JSON.parse(process.env['TYPEORM_MOCK_ENTITIES'] || '[]');
+  customSubscribers = JSON.parse(process.env['TYPEORM_MOCK_SUBSCRIBERS'] || '[]');
+} catch (e) {
+  //
+}
+
 // Create fake connection
 const fakeConnection = getConnectionManager().create({
   type: 'postgres',
-  entities: ['src/entities/*.ts', '__mocks__/entities/*.ts'],
+  entities: ['src/entities/*.ts', '__mocks__/entities/*.ts', ...customEntities],
   migrations: ['src/migrations/*.ts'],
-  subscribers: ['src/subscribers/*.ts'],
+  subscribers: ['src/subscribers/*.ts', ...customSubscribers],
   synchronize: true,
   logging: false,
 });
