@@ -23,9 +23,9 @@ enum CRUD_EXCEPTION_CODE {
   ENTITY_NOT_FOUND = -33487,
 }
 
-type Constructable<TParams = any> = new (...args: any[]) => TParams;
+export type Constructable<TParams = any> = new (...args: any[]) => TParams;
 
-type EntityTarget<TEntity> =
+export type EntityTarget<TEntity> =
   | Constructable<TEntity>
   | string
   | {
@@ -33,12 +33,12 @@ type EntityTarget<TEntity> =
       name: string;
     };
 
-type TEndpointHandlerParams<
+export type TEndpointHandlerParams<
   TParams = Record<string, any>,
   TPayload = Record<string, any>,
 > = Parameters<IEndpointHandler<TParams, TPayload>>;
 
-type ICrudListHandler<
+export type ICrudListHandler<
   TParams,
   TPayload,
   TResult,
@@ -50,7 +50,7 @@ type ICrudListHandler<
   options: TEndpointHandlerParams[1],
 ) => Promise<TView> | TView;
 
-type ICrudUpdateHandler<
+export type ICrudUpdateHandler<
   TParams,
   TPayload,
   TResult,
@@ -63,7 +63,7 @@ type ICrudUpdateHandler<
   options: TEndpointHandlerParams[1],
 ) => Promise<TView> | TView;
 
-type ICrudViewHandler<
+export type ICrudViewHandler<
   TParams,
   TPayload,
   TResult,
@@ -77,16 +77,16 @@ type ICrudViewHandler<
     ) => Promise<TView> | TView)
   | null;
 
-type ICustomHandler<TParams, TResult, TPayload> = (
+export type ICustomHandler<TParams, TResult, TPayload> = (
   params: TEndpointHandlerParams<TParams, TPayload>[0],
   options: TEndpointHandlerParams[1],
 ) => Promise<TResult> | TResult;
 
-type ITypeormRequestParams<TEntity, TPayload> = TPayload & {
+export type ITypeormRequestParams<TEntity, TPayload> = TPayload & {
   query?: IJsonQuery<TEntity>;
 };
 
-type IRequestPayload<TEntity, TPayload> = TPayload & {
+export type IRequestPayload<TEntity, TPayload> = TPayload & {
   authorization?: {
     filter?: IJsonQuery<TEntity>;
   };
@@ -240,31 +240,31 @@ class RestoreOutputParams<TEntity> {
   restored: TEntity[];
 }
 
-type ICountLazyResult<TEntity, TResult> =
+export type ICountLazyResult<TEntity, TResult> =
   | TypeormJsonQuery<TEntity>
   | SelectQueryBuilder<TEntity>
   | ({
       query?: TypeormJsonQuery<TEntity> | SelectQueryBuilder<TEntity>;
     } & TResult);
 
-type IListLazyResult<TEntity, TResult> =
+export type IListLazyResult<TEntity, TResult> =
   | TypeormJsonQuery<TEntity>
   | SelectQueryBuilder<TEntity>
   | ({
       query?: TypeormJsonQuery<TEntity> | SelectQueryBuilder<TEntity>;
     } & TResult);
 
-type IViewLazyResult<TEntity, TResult = never> =
+export type IViewLazyResult<TEntity, TResult = never> =
   | TypeormJsonQuery<TEntity>
   | SelectQueryBuilder<TEntity>
   | ViewOutputParams<TEntity>
   | TResult;
 
-type ICreateLazyResult<TEntity, TResult = never> =
+export type ICreateLazyResult<TEntity, TResult = never> =
   | CreateOutputParams<TEntity | TEntity[]>
   | TResult;
 
-type IUpdateLazyResult<TEntity, TResult> =
+export type IUpdateLazyResult<TEntity, TResult> =
   | TypeormJsonQuery<TEntity>
   | SelectQueryBuilder<TEntity>
   | {
@@ -273,19 +273,19 @@ type IUpdateLazyResult<TEntity, TResult> =
       result?: UpdateOutputParams<TEntity> | TResult;
     };
 
-type IRemoveLazyResult<TEntity> =
+export type IRemoveLazyResult<TEntity> =
   | TypeormJsonQuery<TEntity>
   | SelectQueryBuilder<TEntity>
   | RemoveOutputParams<TEntity>;
 
-type IRestoreLazyResult<TEntity> =
+export type IRestoreLazyResult<TEntity> =
   | TypeormJsonQuery<TEntity>
   | SelectQueryBuilder<TEntity>
   | RestoreOutputParams<TEntity>;
 
-type EndpointDescription = ((entityName?: string) => string) | string;
+export type EndpointDescription = ((entityName?: string) => string) | string;
 
-interface ICrudParams<TEntity, TParams = ObjectLiteral, TResult = ObjectLiteral> {
+export interface ICrudParams<TEntity, TParams = ObjectLiteral, TResult = ObjectLiteral> {
   repository: Repository<TEntity>;
   queryOptions?: Partial<ITypeormJsonQueryOptions>;
   input?: EntityTarget<TParams> | TParams;
@@ -293,71 +293,77 @@ interface ICrudParams<TEntity, TParams = ObjectLiteral, TResult = ObjectLiteral>
   description?: EndpointDescription;
 }
 
-interface ICountParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
+export interface ICountParams<TEntity, TParams, TResult>
+  extends ICrudParams<TEntity, TParams, TResult> {
   cache?: number;
 }
 
-interface IListParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
+export interface IListParams<TEntity, TParams, TResult>
+  extends ICrudParams<TEntity, TParams, TResult> {
   isListWithCount?: boolean; // return entities with count
   isParallel?: boolean; // run count and get entities parallel
   cache?: { listCache?: number; countCache?: number };
 }
 
-interface IViewParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
+export interface IViewParams<TEntity, TParams, TResult>
+  extends ICrudParams<TEntity, TParams, TResult> {
   cache?: number;
 }
 
-interface ICreateParams<TEntity, TParams, TResult>
+export interface ICreateParams<TEntity, TParams, TResult>
   extends Omit<ICrudParams<TEntity, TParams, TResult>, 'queryOptions'> {
   isAllowMultiple?: boolean;
   shouldResetCache?: boolean;
 }
 
-interface IUpdateParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
+export interface IUpdateParams<TEntity, TParams, TResult>
+  extends ICrudParams<TEntity, TParams, TResult> {
   shouldResetCache?: boolean;
 }
 
-interface IRemoveParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
+export interface IRemoveParams<TEntity, TParams, TResult>
+  extends ICrudParams<TEntity, TParams, TResult> {
   isAllowMultiple?: boolean;
   isSoftDelete?: boolean;
   shouldReturnEntity?: boolean;
   shouldResetCache?: boolean;
 }
 
-interface IRestoreParams<TEntity, TParams, TResult> extends ICrudParams<TEntity, TParams, TResult> {
+export interface IRestoreParams<TEntity, TParams, TResult>
+  extends ICrudParams<TEntity, TParams, TResult> {
   isAllowMultiple?: boolean;
   shouldResetCache?: boolean;
 }
 
-interface ICustomWithQueryParams<TEntity, TParams = ObjectLiteral, TResult = ObjectLiteral>
+export interface ICustomWithQueryParams<TEntity, TParams = ObjectLiteral, TResult = ObjectLiteral>
   extends ICrudParams<TEntity, TParams, TResult> {
   output: ICrudParams<TEntity, TParams, TResult>['output'];
 }
 
-interface ICustomParams<TParams = ObjectLiteral, TResult = ObjectLiteral> {
+export interface ICustomParams<TParams = ObjectLiteral, TResult = ObjectLiteral> {
   input?: ICrudParams<never, TParams, TResult>['input'];
   output: ICrudParams<never, TParams, TResult>['output'];
   description?: EndpointDescription;
 }
 
-interface IReturn<TEntity, TParams, TPayload, TResult>
+export interface IReturn<TEntity, TParams, TPayload, TResult>
   extends IEndpointHandler<TParams, IRequestPayload<TEntity, TPayload>, TResult> {}
 
-interface IReturnWithMeta<TEntity, TParams, TPayload, TResult>
+export interface IReturnWithMeta<TEntity, TParams, TPayload, TResult>
   extends IReturn<TEntity, TParams, TPayload, TResult> {
   getMeta: IWithEndpointMeta['getMeta'];
 }
 
-type TOptions<THandlerOptions> = () => THandlerOptions;
+export type TOptions<THandlerOptions> = () => THandlerOptions;
 
-type TControllerMethodParam<TParams> =
+export type TControllerMethodParam<TParams> =
   | boolean
   | {
       path?: string;
       options?: TOptions<Omit<TParams, 'repository'>>;
     };
 
-interface IControllerMethodsParams<TEntity> {
+export interface IControllerMethodsParams<TEntity> {
   count: TControllerMethodParam<
     ICountParams<TEntity, CountRequestParams<TEntity>, CountOutputParams>
   >;
@@ -381,7 +387,7 @@ interface IControllerMethodsParams<TEntity> {
   >;
 }
 
-interface IControllerReturn<TEntity> {
+export interface IControllerReturn<TEntity> {
   count: IReturnWithMeta<
     TEntity,
     CountRequestParams<TEntity>,
@@ -426,13 +432,13 @@ interface IControllerReturn<TEntity> {
   >;
 }
 
-interface IEndpointMeta<TInput = ObjectLiteral, TOutput = ObjectLiteral> {
+export interface IEndpointMeta<TInput = ObjectLiteral, TOutput = ObjectLiteral> {
   input?: string | ICrudParams<any, TInput, TOutput>['input'];
   output?: string | ICrudParams<any, TInput, TOutput>['output'];
   description?: EndpointDescription;
 }
 
-interface IEndpointMetaDefault<TInput = ObjectLiteral, TOutput = ObjectLiteral> {
+export interface IEndpointMetaDefault<TInput = ObjectLiteral, TOutput = ObjectLiteral> {
   input: IEndpointMeta<TInput, TOutput>['input'];
   output: IEndpointMeta<TInput, TOutput>['output'];
   description?: EndpointDescription;
