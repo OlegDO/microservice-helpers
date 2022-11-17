@@ -28,8 +28,14 @@ import {
   SpanStatusCode,
   HrTime,
 } from '@opentelemetry/api';
-import { MetricAttributes } from '@opentelemetry/api-metrics';
-import { hrTime, setRPCMetadata, RPCType } from '@opentelemetry/core';
+import { Histogram, MetricAttributes, ValueType } from '@opentelemetry/api-metrics';
+import {
+  hrTime,
+  setRPCMetadata,
+  RPCType,
+  hrTimeToMilliseconds,
+  hrTimeDuration,
+} from '@opentelemetry/core';
 import {
   InstrumentationBase,
   InstrumentationNodeModuleDefinition,
@@ -68,8 +74,25 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
   /** keep track on spans not ended */
   private readonly _spanNotEnded: WeakSet<Span> = new WeakSet<Span>();
 
+  private _httpServerDurationHistogram!: Histogram;
+  private _httpClientDurationHistogram!: Histogram;
+
   constructor(config: types.InstrumentationConfig = {}) {
     super(instrumentationName, version, config);
+    this._updateMetricInstruments();
+  }
+
+  private _updateMetricInstruments() {
+    this._httpServerDurationHistogram = this.meter.createHistogram('http.gateway.duration', {
+      description: 'measures the duration of the inbound HTTP requests',
+      unit: 'ms',
+      valueType: ValueType.DOUBLE,
+    });
+    this._httpClientDurationHistogram = this.meter.createHistogram('http.gateway.duration', {
+      description: 'measures the duration of the outbound HTTP requests',
+      unit: 'ms',
+      valueType: ValueType.DOUBLE,
+    });
   }
 
   init() {
@@ -134,6 +157,16 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
 
     span.end();
     this._spanNotEnded.delete(span);
+
+    // Record metrics
+    const duration = hrTimeToMilliseconds(hrTimeDuration(startTime, hrTime()));
+
+    if (spanKind === SpanKind.SERVER) {
+      this._httpServerDurationHistogram.record(duration, metricAttributes);
+    }
+    // else if (spanKind === SpanKind.CLIENT) {
+    //   this._httpClientDurationHistogram.record(duration, metricAttributes);
+    // }
   }
 
   private _incomingRequestFunction(
@@ -166,7 +199,7 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
         kind: SpanKind.SERVER,
         attributes: spanAttributes,
       };
-      const metricAttributes = {};
+      let metricAttributes = {};
       const startTime = hrTime();
 
       const ctx = propagation.extract(ROOT_CONTEXT, headers);
@@ -215,7 +248,10 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
             [SemanticAttributes.HTTP_STATUS_CODE]: returned.statusCode,
             body: typeof responseBody === 'object' ? JSON.stringify(responseBody) : responseBody,
           };
-          // instrumentation._headerCapture.server.captureResponseHeaders(span, header => response.getHeader(header));
+
+          metricAttributes = Object.assign(metricAttributes, {
+            [SemanticAttributes.HTTP_URL]: targetMethod,
+          });
 
           span.setAttributes(attributes).setStatus({ code: SpanStatusCode.OK });
 

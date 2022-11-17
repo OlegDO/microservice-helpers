@@ -1,10 +1,15 @@
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+// @TODO import from 'api' after instrumentations upgrade
+import { metrics } from '@opentelemetry/api-metrics';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { HostMetrics } from '@opentelemetry/host-metrics';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
 import { Resource } from '@opentelemetry/resources';
+import { PeriodicExportingMetricReader, MeterProvider } from '@opentelemetry/sdk-metrics';
 import opentelemetry from '@opentelemetry/sdk-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import ResolveSrv from '@helpers/resolve-srv';
@@ -17,6 +22,7 @@ export interface ITracerConfig {
   MS_OPENTELEMETRY_OTLP_URL?: string;
   MS_OPENTELEMETRY_OTLP_URL_SRV?: number;
   MS_OPENTELEMETRY_DEBUG?: number;
+  IS_PROD?: boolean;
   version?: string;
   isGateway?: boolean;
 }
@@ -31,6 +37,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
     MS_OPENTELEMETRY_OTLP_URL,
     MS_OPENTELEMETRY_OTLP_URL_SRV,
     MS_OPENTELEMETRY_DEBUG,
+    IS_PROD = false,
     version = '1.0.0',
     isGateway = false,
   } = constants;
@@ -42,6 +49,19 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
   if (MS_OPENTELEMETRY_DEBUG) {
     diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
   }
+
+  const resource = new Resource({
+    [SemanticResourceAttributes.SERVICE_NAME]: MS_NAME,
+    [SemanticResourceAttributes.SERVICE_VERSION]: version,
+    deployment: IS_PROD ? 'prod' : 'string',
+  });
+  const meterProvider = new MeterProvider({
+    resource,
+  });
+  // @ts-ignore @TODO need update (waiting new version)
+  const hostMetrics = new HostMetrics({ meterProvider, name: 'host-metrics' });
+
+  metrics.setGlobalMeterProvider(meterProvider);
 
   registerInstrumentations({
     instrumentations: [
@@ -62,12 +82,16 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
         : MS_OPENTELEMETRY_OTLP_URL;
     }
 
-    const sdk = new opentelemetry.NodeSDK({
-      traceExporter: new OTLPTraceExporter({ url: OTLP_URL }),
-      resource: new Resource({
-        [SemanticResourceAttributes.SERVICE_NAME]: MS_NAME,
-        [SemanticResourceAttributes.SERVICE_VERSION]: version,
+    meterProvider.addMetricReader(
+      new PeriodicExportingMetricReader({
+        exporter: new OTLPMetricExporter({ url: OTLP_URL ? `${OTLP_URL}/v1/metrics` : undefined }),
+        exportIntervalMillis: 5000,
       }),
+    );
+
+    const sdk = new opentelemetry.NodeSDK({
+      traceExporter: new OTLPTraceExporter({ url: OTLP_URL ? `${OTLP_URL}/v1/traces` : undefined }),
+      resource,
     });
 
     // You can also use the shutdown method to gracefully shut down the SDK before process shutdown
@@ -84,7 +108,10 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
 
     sdk
       .start()
-      .then(() => console.log('opentelemetry initialized.'))
+      .then(() => {
+        hostMetrics.start();
+        console.log('opentelemetry initialized.');
+      })
       .catch((err) => console.log('Error start opentelemetry.', err));
   })();
 };

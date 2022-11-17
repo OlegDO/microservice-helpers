@@ -72,12 +72,12 @@ class MicroserviceInstrumentation extends InstrumentationBase {
   private _httpClientDurationHistogram!: Histogram;
 
   private _updateMetricInstruments() {
-    this._httpServerDurationHistogram = this.meter.createHistogram('http.server.duration', {
+    this._httpServerDurationHistogram = this.meter.createHistogram('http.microservice.duration', {
       description: 'measures the duration of the inbound HTTP requests',
       unit: 'ms',
       valueType: ValueType.DOUBLE,
     });
-    this._httpClientDurationHistogram = this.meter.createHistogram('http.client.duration', {
+    this._httpClientDurationHistogram = this.meter.createHistogram('http.microservice.duration', {
       description: 'measures the duration of the outbound HTTP requests',
       unit: 'ms',
       valueType: ValueType.DOUBLE,
@@ -170,6 +170,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           body: JSON.stringify(params || {}),
         };
         let metricAttributes: MetricAttributes = {
+          [SemanticAttributes.HTTP_URL]: method,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
           [SemanticAttributes.NET_PEER_NAME]: attributes[SemanticAttributes.NET_PEER_NAME],
         };
@@ -245,6 +246,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           body: JSON.stringify(data || {}),
         };
         let metricAttributes: MetricAttributes = {
+          [SemanticAttributes.HTTP_URL]: method,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
           [SemanticAttributes.NET_PEER_NAME]: attributes[SemanticAttributes.NET_PEER_NAME],
         };
@@ -312,6 +314,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           body: JSON.stringify(params || {}),
         };
         let metricAttributes: MetricAttributes = {
+          [SemanticAttributes.HTTP_URL]: eventName,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
         };
         const spanOptions: SpanOptions = {
@@ -387,6 +390,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           body: JSON.stringify(data || {}),
         };
         let metricAttributes: MetricAttributes = {
+          [SemanticAttributes.HTTP_URL]: eventName,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
         };
         const spanOptions: SpanOptions = {
