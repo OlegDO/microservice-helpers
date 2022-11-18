@@ -1,15 +1,13 @@
-import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
-// @TODO import from 'api' after instrumentations upgrade
-import { metrics } from '@opentelemetry/api-metrics';
+import { diag, DiagConsoleLogger, DiagLogLevel, metrics } from '@opentelemetry/api';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { HostMetrics } from '@opentelemetry/host-metrics';
-import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
+import { InstrumentationOption } from '@opentelemetry/instrumentation/build/src/types_internal';
 import { Resource } from '@opentelemetry/resources';
-import { PeriodicExportingMetricReader, MeterProvider } from '@opentelemetry/sdk-metrics';
+import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import opentelemetry from '@opentelemetry/sdk-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import ResolveSrv from '@helpers/resolve-srv';
@@ -50,28 +48,14 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
     diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
   }
 
-  const resource = new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: MS_NAME,
-    [SemanticResourceAttributes.SERVICE_VERSION]: version,
-    deployment: IS_PROD ? 'prod' : 'string',
-  });
-  const meterProvider = new MeterProvider({
-    resource,
-  });
-  // @ts-ignore @TODO need update (waiting new version)
-  const hostMetrics = new HostMetrics({ meterProvider, name: 'host-metrics' });
-
-  metrics.setGlobalMeterProvider(meterProvider);
-
-  registerInstrumentations({
-    instrumentations: [
-      ...[isGateway ? [new GatewayInstrumentation()] : []],
-      new MicroserviceInstrumentation(),
-      new ExpressInstrumentation(),
-      new WinstonInstrumentation(),
-      new PgInstrumentation(),
-    ],
-  });
+  // NOTE: Important think, we should create instrumentations not inside async functions
+  const instrumentations: InstrumentationOption[] = [
+    ...[isGateway ? [new GatewayInstrumentation()] : []],
+    new MicroserviceInstrumentation(),
+    new ExpressInstrumentation(),
+    new WinstonInstrumentation(),
+    new PgInstrumentation(),
+  ];
 
   return (async () => {
     let OTLP_URL = undefined;
@@ -82,16 +66,18 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
         : MS_OPENTELEMETRY_OTLP_URL;
     }
 
-    meterProvider.addMetricReader(
-      new PeriodicExportingMetricReader({
+    const sdk = new opentelemetry.NodeSDK({
+      instrumentations,
+      resource: new Resource({
+        [SemanticResourceAttributes.SERVICE_NAME]: MS_NAME,
+        [SemanticResourceAttributes.SERVICE_VERSION]: version,
+        deployment: IS_PROD ? 'prod' : 'string',
+      }),
+      metricReader: new PeriodicExportingMetricReader({
         exporter: new OTLPMetricExporter({ url: OTLP_URL ? `${OTLP_URL}/v1/metrics` : undefined }),
         exportIntervalMillis: 5000,
       }),
-    );
-
-    const sdk = new opentelemetry.NodeSDK({
       traceExporter: new OTLPTraceExporter({ url: OTLP_URL ? `${OTLP_URL}/v1/traces` : undefined }),
-      resource,
     });
 
     // You can also use the shutdown method to gracefully shut down the SDK before process shutdown
@@ -106,13 +92,28 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
         .finally(() => process.exit(0));
     });
 
-    sdk
-      .start()
-      .then(() => {
-        hostMetrics.start();
-        console.log('opentelemetry initialized.');
-      })
-      .catch((err) => console.log('Error start opentelemetry.', err));
+    try {
+      await sdk.start();
+
+      // init instrumentation metrics
+      for (const inst of instrumentations) {
+        if ('initMetrics' in inst) {
+          // @ts-ignore
+          inst?.initMetrics();
+        }
+      }
+
+      const hostMetrics = new HostMetrics({
+        // @ts-ignore @TODO need update (waiting new version)
+        meterProvider: metrics.getMeterProvider(),
+        name: 'host-metrics',
+      });
+
+      hostMetrics.start();
+      console.info('opentelemetry initialized.');
+    } catch (e) {
+      console.info('Error start opentelemetry.', e);
+    }
   })();
 };
 

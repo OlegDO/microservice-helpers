@@ -79,10 +79,12 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
 
   constructor(config: types.InstrumentationConfig = {}) {
     super(instrumentationName, version, config);
-    this._updateMetricInstruments();
   }
 
-  private _updateMetricInstruments() {
+  /**
+   * Call when SDK start and metric provider exist
+   */
+  public initMetrics() {
     this._httpServerDurationHistogram = this.meter.createHistogram('http.gateway.duration', {
       description: 'measures the duration of the inbound HTTP requests',
       unit: 'ms',

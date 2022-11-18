@@ -60,18 +60,20 @@ const handleOriginalError = (error: Error) => {
 };
 
 class MicroserviceInstrumentation extends InstrumentationBase {
-  constructor(config: types.InstrumentationConfig = {}) {
-    super('@lomray/opentelemetry-microservice', '1.0.0', config);
-    this._updateMetricInstruments();
-  }
-
   /** keep track on spans not ended */
   private readonly _spanNotEnded: WeakSet<Span> = new WeakSet<Span>();
 
   private _httpServerDurationHistogram!: Histogram;
   private _httpClientDurationHistogram!: Histogram;
 
-  private _updateMetricInstruments() {
+  constructor(config: types.InstrumentationConfig = {}) {
+    super('@lomray/opentelemetry-microservice', '1.0.0', config);
+  }
+
+  /**
+   * Call when SDK start and metric provider exist
+   */
+  public initMetrics() {
     this._httpServerDurationHistogram = this.meter.createHistogram('http.microservice.duration', {
       description: 'measures the duration of the inbound HTTP requests',
       unit: 'ms',
