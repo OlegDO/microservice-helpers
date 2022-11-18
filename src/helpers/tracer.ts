@@ -20,7 +20,7 @@ export interface ITracerConfig {
   MS_OPENTELEMETRY_OTLP_URL?: string;
   MS_OPENTELEMETRY_OTLP_URL_SRV?: number;
   MS_OPENTELEMETRY_DEBUG?: number;
-  IS_PROD?: boolean;
+  BRANCH?: string;
   version?: string;
   isGateway?: boolean;
 }
@@ -35,7 +35,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
     MS_OPENTELEMETRY_OTLP_URL,
     MS_OPENTELEMETRY_OTLP_URL_SRV,
     MS_OPENTELEMETRY_DEBUG,
-    IS_PROD = false,
+    BRANCH = 'staging',
     version = '1.0.0',
     isGateway = false,
   } = constants;
@@ -71,7 +71,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
       resource: new Resource({
         [SemanticResourceAttributes.SERVICE_NAME]: MS_NAME,
         [SemanticResourceAttributes.SERVICE_VERSION]: version,
-        deployment: IS_PROD ? 'prod' : 'string',
+        deployment: BRANCH,
       }),
       metricReader: new PeriodicExportingMetricReader({
         exporter: new OTLPMetricExporter({ url: OTLP_URL ? `${OTLP_URL}/v1/metrics` : undefined }),
