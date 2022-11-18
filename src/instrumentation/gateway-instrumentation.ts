@@ -164,7 +164,7 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
     const duration = hrTimeToMilliseconds(hrTimeDuration(startTime, hrTime()));
 
     if (spanKind === SpanKind.SERVER) {
-      this._httpServerDurationHistogram.record(duration, metricAttributes);
+      this._httpServerDurationHistogram?.record(duration, metricAttributes);
     }
     // else if (spanKind === SpanKind.CLIENT) {
     //   this._httpClientDurationHistogram.record(duration, metricAttributes);
