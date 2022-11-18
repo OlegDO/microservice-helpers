@@ -67,9 +67,6 @@ const setSpanWithError = (span: Span, error: Error): void => {
   span.recordException(error);
 };
 
-const instrumentationName = '@lomray/opentelemetry-microservice-gateway';
-const version = '1.0.0';
-
 class GatewayInstrumentation extends InstrumentationBase<typeof express> {
   /** keep track on spans not ended */
   private readonly _spanNotEnded: WeakSet<Span> = new WeakSet<Span>();
@@ -78,7 +75,7 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
   private _httpClientDurationHistogram!: Histogram;
 
   constructor(config: types.InstrumentationConfig = {}) {
-    super(instrumentationName, version, config);
+    super('@lomray/opentelemetry-microservice-gateway', '1.0.0', config);
   }
 
   /**

@@ -50,7 +50,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
 
   // NOTE: Important think, we should create instrumentations not inside async functions
   const instrumentations: InstrumentationOption[] = [
-    ...[isGateway ? [new GatewayInstrumentation()] : []],
+    ...[isGateway ? new GatewayInstrumentation() : []],
     new MicroserviceInstrumentation(),
     new ExpressInstrumentation(),
     new WinstonInstrumentation(),
