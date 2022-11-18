@@ -156,6 +156,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
         const reqId = (task as MsLib.MicroserviceRequest)?.getId();
 
         const startTime = hrTime();
+        const type = 'incoming-request';
         const isError = Boolean(task?.['error'] as MsLib.BaseException);
         const headers = params?.payload?.headers;
         const hostname = params?.payload?.headers?.host;
@@ -170,11 +171,14 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           [SemanticAttributes.HTTP_CLIENT_IP]: clientIp,
           [SemanticAttributes.HTTP_USER_AGENT]: userAgent,
           body: JSON.stringify(params || {}),
+          type,
         };
         let metricAttributes: MetricAttributes = {
           [SemanticAttributes.HTTP_URL]: method,
+          [SemanticAttributes.HTTP_CLIENT_IP]: clientIp,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
           [SemanticAttributes.NET_PEER_NAME]: attributes[SemanticAttributes.NET_PEER_NAME],
+          type,
         };
         const ctx = propagation.extract(ROOT_CONTEXT, headers);
         const spanOptions: SpanOptions = {
@@ -234,6 +238,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
         const contentLength = payload?.headers?.['content-length'];
 
         const operationName = `MS REQUEST - ${method}`;
+        const type = 'outgoing-request';
         const startTime = hrTime();
         const attributes = {
           [SemanticAttributes.HTTP_URL]: method,
@@ -246,11 +251,14 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           [SemanticAttributes.HTTP_CLIENT_IP]: clientIp,
           [SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH]: contentLength,
           body: JSON.stringify(data || {}),
+          type,
         };
         let metricAttributes: MetricAttributes = {
           [SemanticAttributes.HTTP_URL]: method,
+          [SemanticAttributes.HTTP_CLIENT_IP]: clientIp,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
           [SemanticAttributes.NET_PEER_NAME]: attributes[SemanticAttributes.NET_PEER_NAME],
+          type,
         };
         const spanOptions: SpanOptions = {
           kind: SpanKind.CLIENT,
@@ -309,15 +317,18 @@ class MicroserviceInstrumentation extends InstrumentationBase {
 
         const operationName = `MS PUBLISH EVENT - ${eventName}`;
         const startTime = hrTime();
+        const type = 'publish-event';
         const attributes = {
           [SemanticAttributes.HTTP_URL]: eventName,
           [SemanticAttributes.HTTP_METHOD]: 'POST',
           [SemanticAttributes.HTTP_TARGET]: eventName,
           body: JSON.stringify(params || {}),
+          type,
         };
         let metricAttributes: MetricAttributes = {
           [SemanticAttributes.HTTP_URL]: eventName,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
+          type,
         };
         const spanOptions: SpanOptions = {
           kind: SpanKind.CLIENT,
@@ -384,16 +395,19 @@ class MicroserviceInstrumentation extends InstrumentationBase {
         const payload = data?.payload ?? {};
 
         const operationName = `MS EXECUTE EVENT - ${eventName}`;
+        const type = 'execute-event';
         const startTime = hrTime();
         const attributes = {
           [SemanticAttributes.HTTP_URL]: eventName,
           [SemanticAttributes.HTTP_METHOD]: 'POST',
           [SemanticAttributes.HTTP_TARGET]: eventName,
           body: JSON.stringify(data || {}),
+          type,
         };
         let metricAttributes: MetricAttributes = {
           [SemanticAttributes.HTTP_URL]: eventName,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
+          type,
         };
         const spanOptions: SpanOptions = {
           kind: SpanKind.SERVER,

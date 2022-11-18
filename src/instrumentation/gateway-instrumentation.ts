@@ -67,6 +67,12 @@ const setSpanWithError = (span: Span, error: Error): void => {
   span.recordException(error);
 };
 
+/**
+ * Get ip address from request
+ */
+const parseIp = (req: http.IncomingMessage) =>
+  (req.headers['x-forwarded-for'] as string)?.split(',').shift() || req.socket?.remoteAddress;
+
 class GatewayInstrumentation extends InstrumentationBase<typeof express> {
   /** keep track on spans not ended */
   private readonly _spanNotEnded: WeakSet<Span> = new WeakSet<Span>();
@@ -186,19 +192,25 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
 
       instrumentation._diag.debug(`${component} instrumentation incomingRequest`);
 
-      const { headers } = request;
+      const { headers, url } = request;
+      const ipAddress = parseIp(request);
 
       const spanAttributes = {
         component,
         serverName: 'gateway-server',
         headers: typeof headers === 'object' ? JSON.stringify(headers) : '',
+        ipAddress,
+        method,
       };
 
       const spanOptions = {
         kind: SpanKind.SERVER,
         attributes: spanAttributes,
       };
-      let metricAttributes = {};
+      let metricAttributes = {
+        ipAddress,
+        method,
+      };
       const startTime = hrTime();
 
       const ctx = propagation.extract(ROOT_CONTEXT, headers);
@@ -236,7 +248,7 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
               }
             },
           );
-          const targetMethod: string = returned?.req?.['body']?.method;
+          const targetMethod: string = returned?.req?.['body']?.method ?? url;
           const responseBody: string = returned?.req?.['body'] ?? '';
 
           if (targetMethod) {
