@@ -169,9 +169,6 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
     if (spanKind === SpanKind.SERVER) {
       this._httpServerDurationHistogram?.record(duration, metricAttributes);
     }
-    // else if (spanKind === SpanKind.CLIENT) {
-    //   this._httpClientDurationHistogram.record(duration, metricAttributes);
-    // }
   }
 
   private _incomingRequestFunction(
