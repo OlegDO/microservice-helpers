@@ -10,6 +10,7 @@ import { Resource } from '@opentelemetry/resources';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import opentelemetry from '@opentelemetry/sdk-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { v4 as uuidv4 } from 'uuid';
 import ResolveSrv from '@helpers/resolve-srv';
 import GatewayInstrumentation from '@instrumentation/gateway-instrumentation';
 import MicroserviceInstrumentation from '@instrumentation/microservice-instrumentation';
@@ -66,12 +67,14 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
         : MS_OPENTELEMETRY_OTLP_URL;
     }
 
+    const otlpInstanceId = uuidv4();
     const sdk = new opentelemetry.NodeSDK({
       instrumentations,
       resource: new Resource({
         [SemanticResourceAttributes.SERVICE_NAME]: MS_NAME,
         [SemanticResourceAttributes.SERVICE_VERSION]: version,
         environment: ENVIRONMENT,
+        otlpInstanceId,
       }),
       metricReader: new PeriodicExportingMetricReader({
         exporter: new OTLPMetricExporter({ url: OTLP_URL ? `${OTLP_URL}/v1/metrics` : undefined }),
@@ -110,7 +113,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
       });
 
       hostMetrics.start();
-      console.info('opentelemetry initialized.');
+      console.info('opentelemetry initialized: ', otlpInstanceId);
     } catch (e) {
       console.info('Error start opentelemetry.', e);
     }
