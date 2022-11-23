@@ -75,7 +75,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
       }),
       metricReader: new PeriodicExportingMetricReader({
         exporter: new OTLPMetricExporter({ url: OTLP_URL ? `${OTLP_URL}/v1/metrics` : undefined }),
-        exportIntervalMillis: 5000,
+        exportIntervalMillis: 1000,
       }),
       traceExporter: new OTLPTraceExporter({ url: OTLP_URL ? `${OTLP_URL}/v1/traces` : undefined }),
     });

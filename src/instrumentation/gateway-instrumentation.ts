@@ -23,12 +23,13 @@ import {
   SpanKind,
   ROOT_CONTEXT,
   propagation,
-  SpanOptions,
   Context,
   SpanStatusCode,
   HrTime,
+  MetricAttributes,
+  ValueType,
 } from '@opentelemetry/api';
-import { Histogram, MetricAttributes, ValueType } from '@opentelemetry/api-metrics';
+import type { Histogram, SpanOptions } from '@opentelemetry/api';
 import {
   hrTime,
   setRPCMetadata,
@@ -78,7 +79,6 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
   private readonly _spanNotEnded: WeakSet<Span> = new WeakSet<Span>();
 
   private _httpServerDurationHistogram!: Histogram;
-  private _httpClientDurationHistogram!: Histogram;
 
   constructor(config: types.InstrumentationConfig = {}) {
     super('@lomray/opentelemetry-microservice-gateway', '1.0.0', config);
@@ -90,11 +90,6 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
   public initMetrics() {
     this._httpServerDurationHistogram = this.meter.createHistogram('http.gateway.duration', {
       description: 'measures the duration of the inbound HTTP requests',
-      unit: 'ms',
-      valueType: ValueType.DOUBLE,
-    });
-    this._httpClientDurationHistogram = this.meter.createHistogram('http.gateway.duration', {
-      description: 'measures the duration of the outbound HTTP requests',
       unit: 'ms',
       valueType: ValueType.DOUBLE,
     });

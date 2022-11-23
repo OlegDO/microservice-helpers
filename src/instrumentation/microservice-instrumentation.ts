@@ -10,9 +10,10 @@ import {
   HrTime,
   Context,
   ROOT_CONTEXT,
+  MetricAttributes,
+  ValueType,
 } from '@opentelemetry/api';
-import type { SpanOptions } from '@opentelemetry/api';
-import { Histogram, MetricAttributes, ValueType } from '@opentelemetry/api-metrics';
+import type { Histogram, SpanOptions } from '@opentelemetry/api';
 import { hrTime, hrTimeDuration, hrTimeToMilliseconds } from '@opentelemetry/core';
 import {
   InstrumentationBase,
@@ -74,16 +75,22 @@ class MicroserviceInstrumentation extends InstrumentationBase {
    * Call when SDK start and metric provider exist
    */
   public initMetrics() {
-    this._httpServerDurationHistogram = this.meter.createHistogram('http.microservice.duration', {
-      description: 'measures the duration of the inbound HTTP requests',
-      unit: 'ms',
-      valueType: ValueType.DOUBLE,
-    });
-    this._httpClientDurationHistogram = this.meter.createHistogram('http.microservice.duration', {
-      description: 'measures the duration of the outbound HTTP requests',
-      unit: 'ms',
-      valueType: ValueType.DOUBLE,
-    });
+    this._httpServerDurationHistogram = this.meter.createHistogram(
+      'http.microservice.server.duration',
+      {
+        description: 'measures the duration of the inbound HTTP requests',
+        unit: 'ms',
+        valueType: ValueType.DOUBLE,
+      },
+    );
+    this._httpClientDurationHistogram = this.meter.createHistogram(
+      'http.microservice.client.duration',
+      {
+        description: 'measures the duration of the outbound HTTP requests',
+        unit: 'ms',
+        valueType: ValueType.DOUBLE,
+      },
+    );
   }
 
   protected init() {
