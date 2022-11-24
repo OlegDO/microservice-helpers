@@ -240,7 +240,9 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
               }
             },
           );
-          const targetMethod: string = returned?.req?.['body']?.method ?? url;
+          const targetMethod: string =
+            returned?.req?.['body']?.method ??
+            ((returned?.req?.['body']?.[0]?.method && 'batch') || url);
           const responseBody: string = returned?.req?.['body'] ?? '';
 
           if (targetMethod) {
