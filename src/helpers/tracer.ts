@@ -62,25 +62,18 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
     let OTLP_URL = undefined;
 
     if (MS_OPENTELEMETRY_OTLP_URL) {
-      if (MS_OPENTELEMETRY_OTLP_URL_SRV) {
-        OTLP_URL = await ResolveSrv(MS_OPENTELEMETRY_OTLP_URL);
-
-        // track srv records changes
-        setInterval(() => {
-          ResolveSrv(MS_OPENTELEMETRY_OTLP_URL)
-            .then((resolvedUrl) => {
-              OTLP_URL = resolvedUrl;
-            })
-            .catch((e) => {
-              console.log('Failed resolve OTLP SRV URL: ', e);
-            });
-        }, 30000);
-      } else {
-        OTLP_URL = MS_OPENTELEMETRY_OTLP_URL;
-      }
+      OTLP_URL = MS_OPENTELEMETRY_OTLP_URL_SRV
+        ? await ResolveSrv(MS_OPENTELEMETRY_OTLP_URL)
+        : MS_OPENTELEMETRY_OTLP_URL;
     }
 
     const otlpInstanceId = uuidv4();
+    const exporter = new OTLPMetricExporter({
+      url: OTLP_URL ? `${OTLP_URL}/v1/metrics` : undefined,
+    });
+    const traceExporter = new OTLPTraceExporter({
+      url: OTLP_URL ? `${OTLP_URL}/v1/traces` : undefined,
+    });
     const sdk = new opentelemetry.NodeSDK({
       instrumentations,
       resource: new Resource({
@@ -90,10 +83,10 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
         otlpInstanceId,
       }),
       metricReader: new PeriodicExportingMetricReader({
-        exporter: new OTLPMetricExporter({ url: OTLP_URL ? `${OTLP_URL}/v1/metrics` : undefined }),
+        exporter,
         exportIntervalMillis: 1000,
       }),
-      traceExporter: new OTLPTraceExporter({ url: OTLP_URL ? `${OTLP_URL}/v1/traces` : undefined }),
+      traceExporter,
     });
 
     // You can also use the shutdown method to gracefully shut down the SDK before process shutdown
@@ -127,6 +120,21 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
 
       hostMetrics.start();
       console.info('opentelemetry initialized: ', otlpInstanceId);
+
+      // track srv records changes
+      if (MS_OPENTELEMETRY_OTLP_URL_SRV && MS_OPENTELEMETRY_OTLP_URL) {
+        setInterval(() => {
+          ResolveSrv(MS_OPENTELEMETRY_OTLP_URL)
+            .then((url) => {
+              exporter['url'] = url;
+              // @ts-ignore
+              traceExporter['url'] = url;
+            })
+            .catch((e) => {
+              console.log('Failed resolve OTLP SRV URL: ', e);
+            });
+        }, 30000);
+      }
     } catch (e) {
       console.info('Error start opentelemetry.', e);
     }
