@@ -58,6 +58,11 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
     new PgInstrumentation(),
   ];
 
+  const getTraceUrl = (host?: string): string | undefined =>
+    host ? `${host}/v1/traces` : undefined;
+  const getMetricUrl = (host?: string): string | undefined =>
+    host ? `${host}/v1/metrics` : undefined;
+
   return (async () => {
     let OTLP_URL = undefined;
 
@@ -69,10 +74,10 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
 
     const otlpInstanceId = uuidv4();
     const exporter = new OTLPMetricExporter({
-      url: OTLP_URL ? `${OTLP_URL}/v1/metrics` : undefined,
+      url: getMetricUrl(OTLP_URL),
     });
     const traceExporter = new OTLPTraceExporter({
-      url: OTLP_URL ? `${OTLP_URL}/v1/traces` : undefined,
+      url: getTraceUrl(OTLP_URL),
     });
     const sdk = new opentelemetry.NodeSDK({
       instrumentations,
@@ -126,9 +131,10 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
         setInterval(() => {
           ResolveSrv(MS_OPENTELEMETRY_OTLP_URL)
             .then((url) => {
-              exporter['url'] = url;
               // @ts-ignore
-              traceExporter['url'] = url;
+              exporter['_otlpExporter']['url'] = getMetricUrl(url);
+              // @ts-ignore
+              traceExporter['url'] = getTraceUrl(url);
             })
             .catch((e) => {
               console.log('Failed resolve OTLP SRV URL: ', e);
