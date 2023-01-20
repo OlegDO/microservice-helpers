@@ -4,7 +4,9 @@ module.exports = {
     'src/**/*.ts'
   ],
   exclude: [
-    'src/interfaces'
+    'src/interfaces',
+    'src/instrumentation',
+    'src/helpers/tracer.ts'
   ],
   all: true,
   cache: false,
