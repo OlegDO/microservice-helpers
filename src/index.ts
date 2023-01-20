@@ -14,6 +14,8 @@ export { default as CreateDbConnection } from '@helpers/create-db-connection';
 
 export { default as EntityColumns } from '@helpers/entity-columns';
 
+export { default as GetDbConfig } from '@helpers/get-db-config';
+
 export * from '@helpers/launchers';
 
 export * from '@services/endpoint';
