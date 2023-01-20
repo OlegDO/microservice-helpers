@@ -5,7 +5,8 @@ module.exports = {
   ],
   exclude: [
     'src/interfaces',
-    'src/instrumentation',
+    'src/instrumentation/**/*.ts',
+    'src/test-helpers/**/*.ts',
     'src/helpers/tracer.ts'
   ],
   all: true,

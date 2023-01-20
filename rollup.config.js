@@ -83,7 +83,6 @@ export default {
     copy({
       targets: [
         { src: 'package.json', dest: 'lib' },
-        // { src: 'config', dest: 'lib/config' },
       ]
     })
   ],
