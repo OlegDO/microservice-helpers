@@ -42,12 +42,16 @@ export default {
     'klona/full',
     'traverse',
     'crypto',
+    'uuid',
     '@opentelemetry/api',
     '@opentelemetry/exporter-trace-otlp-http',
     '@opentelemetry/instrumentation-express',
     '@opentelemetry/instrumentation-http',
+    '@opentelemetry/exporter-metrics-otlp-http',
     '@opentelemetry/instrumentation-pg',
     '@opentelemetry/instrumentation-winston',
+    '@opentelemetry/host-metrics',
+    '@opentelemetry/sdk-metrics',
     '@opentelemetry/resources',
     '@opentelemetry/sdk-node',
     '@opentelemetry/semantic-conventions',
@@ -79,6 +83,7 @@ export default {
     copy({
       targets: [
         { src: 'package.json', dest: 'lib' },
+        // { src: 'config', dest: 'lib/config' },
       ]
     })
   ],
