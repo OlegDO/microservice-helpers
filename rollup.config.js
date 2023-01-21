@@ -10,6 +10,7 @@ export default {
   input: [
     'src/index.ts',
     'src/helpers/tracer.ts',
+    'src/helpers/get-constants.ts',
     'src/mocks/index.ts',
     'src/test-helpers/index.ts'
   ],
