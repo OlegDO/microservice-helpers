@@ -23,4 +23,19 @@ describe('helpers/create-db-connection', () => {
 
     expect(url).to.equal('url');
   });
+
+  it('should correctly return config with extended package', () => {
+    const packageName = '@lomray/microservices-users';
+    const { entities, subscribers, migrations } = GetDbConfig(
+      constants,
+      packageName,
+    ) as PostgresConnectionOptions;
+
+    expect(entities?.length).to.equal(2);
+    expect(entities?.[0] as string).to.contain(packageName);
+    expect(subscribers?.length).to.equal(2);
+    expect(subscribers?.[0] as string).to.contain(packageName);
+    expect(migrations?.length).to.equal(2);
+    expect(migrations?.[0] as string).to.contain(packageName);
+  });
 });
