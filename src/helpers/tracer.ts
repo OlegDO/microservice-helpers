@@ -21,10 +21,10 @@ type TConstants = Pick<
   | 'MS_NAME'
   | 'ENVIRONMENT'
   | 'VERSION'
-  | 'MS_OPENTELEMETRY_ENABLE'
+  | 'IS_OPENTELEMETRY_ENABLE'
   | 'MS_OPENTELEMETRY_OTLP_URL'
-  | 'MS_OPENTELEMETRY_OTLP_URL_SRV'
-  | 'MS_OPENTELEMETRY_DEBUG'
+  | 'IS_OPENTELEMETRY_OTLP_URL_SRV'
+  | 'IS_OPENTELEMETRY_DEBUG'
 >;
 
 export interface ITracerConfig extends TConstants {
@@ -37,20 +37,20 @@ export interface ITracerConfig extends TConstants {
 const tracer = (constants: ITracerConfig): Promise<void> | void => {
   const {
     MS_NAME,
-    MS_OPENTELEMETRY_ENABLE,
+    IS_OPENTELEMETRY_ENABLE,
     MS_OPENTELEMETRY_OTLP_URL,
-    MS_OPENTELEMETRY_OTLP_URL_SRV,
-    MS_OPENTELEMETRY_DEBUG,
+    IS_OPENTELEMETRY_OTLP_URL_SRV,
+    IS_OPENTELEMETRY_DEBUG,
     ENVIRONMENT = 'staging',
     VERSION = '1.0.0',
     isGateway = false,
   } = constants;
 
-  if (!MS_OPENTELEMETRY_ENABLE) {
+  if (!IS_OPENTELEMETRY_ENABLE) {
     return;
   }
 
-  if (MS_OPENTELEMETRY_DEBUG) {
+  if (IS_OPENTELEMETRY_DEBUG) {
     diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
   }
 
@@ -72,7 +72,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
     let OTLP_URL = undefined;
 
     if (MS_OPENTELEMETRY_OTLP_URL) {
-      OTLP_URL = MS_OPENTELEMETRY_OTLP_URL_SRV
+      OTLP_URL = IS_OPENTELEMETRY_OTLP_URL_SRV
         ? await ResolveSrv(MS_OPENTELEMETRY_OTLP_URL)
         : MS_OPENTELEMETRY_OTLP_URL;
     }
@@ -132,7 +132,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
       console.info('opentelemetry initialized: ', otlpInstanceId);
 
       // track srv records changes
-      if (MS_OPENTELEMETRY_OTLP_URL_SRV && MS_OPENTELEMETRY_OTLP_URL) {
+      if (IS_OPENTELEMETRY_OTLP_URL_SRV && MS_OPENTELEMETRY_OTLP_URL) {
         setInterval(() => {
           ResolveSrv(MS_OPENTELEMETRY_OTLP_URL)
             .then((url) => {

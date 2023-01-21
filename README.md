@@ -18,7 +18,7 @@
 - `MS_NAME` - Microservice name. Default: `authentication`
 - `MS_WORKERS` - Microservice queue workers count. Default: `5`
 - `MS_ENABLE_REMOTE_MIDDLEWARE` - Enable remote middleware feature. Set `0` to disable. Default: `1` (enabled)
-- `MS_REMOTE_CONFIG` - Enable remote config (get from configuration microservice). Set `0` to disable. Default: `1`
+- `MS_REMOTE_CONFIG_ENABLE` - Enable remote config (get from configuration microservice). Set `0` to disable. Default: `1`
 - `MS_CONFIG_NAME` - Configuration microservice name. Default: `configuration`
 - `DB_URL` - Database url connection string. Default: `undefined`. Please use URL or credentials.
 - `DB_HOST` - Database host. Default: `127.0.0.1`
