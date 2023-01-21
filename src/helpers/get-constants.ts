@@ -31,7 +31,7 @@ const GetConstants = ({
   MS_CONFIG_NAME: process.env.MS_CONFIG_NAME || 'configuration',
   MS_CONNECTION: process.env.MS_CONNECTION,
   IS_CONNECTION_SRV: Boolean(process.env.MS_CONNECTION_SRV ?? false),
-  MS_WORKERS: Number(process.env.MS_WORKERS) || 5,
+  MS_WORKERS: Number(process.env.MS_WORKERS || 5),
   IS_ENABLE_REMOTE_MIDDLEWARE: Boolean(Number(process.env.MS_ENABLE_REMOTE_MIDDLEWARE ?? 1)),
   IS_REMOTE_CONFIG_ENABLE: Boolean(Number(process.env.MS_REMOTE_CONFIG_ENABLE || 1)),
   IS_ENABLE_GRAFANA_LOG: Boolean(Number(process.env.MS_ENABLE_GRAFANA_LOG || 0)),

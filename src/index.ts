@@ -16,8 +16,6 @@ export { default as EntityColumns } from '@helpers/entity-columns';
 
 export { default as GetDbConfig } from '@helpers/get-db-config';
 
-export type { IDbConfig } from '@helpers/get-db-config';
-
 export { default as GetMsConfig } from '@helpers/get-ms-config';
 
 export type { TOverloadMsConfigParams } from '@helpers/get-ms-config';
