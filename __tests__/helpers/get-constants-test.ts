@@ -4,7 +4,7 @@ import GetConstants from '@helpers/get-constants';
 
 describe('helpers/get-constants', () => {
   it('should correctly return general constants', () => {
-    const { IS_BUILD, MS_NAME, VERSION, ENV, ENVIRONMENT, SRC_FOLDER, DB, AWS, FIREBASE } =
+    const { IS_BUILD, MS_NAME, VERSION, ENV, ENVIRONMENT, SRC_FOLDER, ...OTHER } =
       GetConstants(ConstantsMock);
 
     expect(IS_BUILD).to.false;
@@ -13,9 +13,9 @@ describe('helpers/get-constants', () => {
     expect(ENV).to.equal('tests');
     expect(ENVIRONMENT).to.equal('prod');
     expect(SRC_FOLDER).to.equal('src');
-    expect(DB).to.undefined;
-    expect(AWS).to.undefined;
-    expect(FIREBASE).to.undefined;
+    expect(OTHER['DB']).to.undefined;
+    expect(OTHER['AWS']).to.undefined;
+    expect(OTHER['FIREBASE']).to.undefined;
   });
 
   it('should correctly return constants with db', () => {
