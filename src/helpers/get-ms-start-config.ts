@@ -2,9 +2,12 @@ import _ from 'lodash';
 import type { ICommonConstants } from '@helpers/get-constants';
 import type { IStartConfig, IStartConfigWithDb } from '@helpers/launchers';
 
-export type TOverloadMsStartConfigParams<T extends ICommonConstants> = T['DB'] extends undefined
-  ? IStartConfig
-  : IStartConfigWithDb;
+export type TOverloadMsStartConfigParams<T extends Record<string, any>> = T['DB'] extends Record<
+  string,
+  any
+>
+  ? IStartConfigWithDb
+  : IStartConfig;
 
 /**
  * Get default microservice start config

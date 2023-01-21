@@ -85,11 +85,11 @@ export type ICommonConstants = ReturnType<typeof GetConstants>;
 export type ICommonConstantsClean = Omit<ICommonConstants, 'AWS' | 'DB' | 'FIREBASE'>;
 
 export type TOverloadReturn<T extends ICustomEnv> = ICommonConstantsClean &
-  (T['withDb'] extends true ? Required<Pick<ICommonConstants, 'DB'>> : Record<string, never>) &
-  (T['withAWS'] extends true ? Required<Pick<ICommonConstants, 'AWS'>> : Record<string, never>) &
+  (T['withDb'] extends true ? Required<Pick<ICommonConstants, 'DB'>> : Record<never, never>) &
+  (T['withAWS'] extends true ? Required<Pick<ICommonConstants, 'AWS'>> : Record<never, never>) &
   (T['withFirebase'] extends true
     ? Required<Pick<ICommonConstants, 'FIREBASE'>>
-    : Record<string, never>);
+    : Record<never, never>);
 
 export type IOverloadFunc = <T extends ICustomEnv>(params: T) => TOverloadReturn<T>;
 
