@@ -20,12 +20,7 @@
 - `MS_ENABLE_REMOTE_MIDDLEWARE` - Enable remote middleware feature. Set `0` to disable. Default: `1` (enabled)
 - `MS_REMOTE_CONFIG_ENABLE` - Enable remote config (get from configuration microservice). Set `0` to disable. Default: `1`
 - `MS_CONFIG_NAME` - Configuration microservice name. Default: `configuration`
-- `DB_URL` - Database url connection string. Default: `undefined`. Please use URL or credentials.
-- `DB_HOST` - Database host. Default: `127.0.0.1`
-- `DB_PORT` - Database port. Default: `5432`
-- `DB_USERNAME` - Database user name. Default: `postgres`
-- `DB_PASSWORD` - Database password. Default: `example`
-- `DB_DATABASE` - Database db name. Default: `ms-authentication`
+- `ENABLE_EVENTS` - Enable events if microservice support it. Default: `0`
 - `MS_GRAFANA_LOKI_CONFIG` - Grafana loki config. Default: `null`
 - `MS_ENABLE_GRAFANA_LOG` - Enable grafana loki log (config from configuration ms). Default: `0`
 - `MS_OPENTELEMETRY_ENABLE` - Enable opentelemetry tracers. Default: `0`
@@ -33,6 +28,27 @@
 - `MS_OPENTELEMETRY_OTLP_URL_SRV` - Custom opentelemetry OTLP URL it is SRV record. Default: `0`
 - `MS_OPENTELEMETRY_DEBUG` - Enable debug log opentelemetry. Default: `0`
 - `MS_CONSOLE_LOG_LEVEL` - Change console log level. Default: `info`
+
+## COMMON ENVIRONMENTS - DB SUPPORT:
+- `DB_URL` - Database url connection string. Default: `undefined`. Please use URL or credentials.
+- `DB_HOST` - Database host. Default: `127.0.0.1`
+- `DB_PORT` - Database port. Default: `5432`
+- `DB_USERNAME` - Database user name. Default: `postgres`
+- `DB_PASSWORD` - Database password. Default: `example`
+- `DB_DATABASE` - Database name. Default: `ms-microservice-name`
+- `DB_FROM_CONFIG_MS` - Get DB credentials from configuration microservice. Set `0` to disable. Default: `1`
+
+## COMMON ENVIRONMENTS - AWS SUPPORT:
+- `AWS_ACCESS_KEY_ID` - AWS access key ID. Default: `undefined`
+- `AWS_SECRET_ACCESS_KEY` - AWS secret access key. Default: `undefined`
+- `AWS_REGION` - AWS region. Default: `undefined`
+- `AWS_BUCKET_NAME` - AWS S3 bucket name. Default: `undefined`
+- `AWS_BUCKET_ACL` - AWS S3 bucket ACL (e.g.: public-read). Default: `undefined`
+- `AWS_FROM_CONFIG_MS` - Get AWS credentials from configuration microservice. Set `0` to disable. Default: `1`
+
+## COMMON ENVIRONMENTS - FIREBASE SUPPORT:
+- `FIREBASE_CREDENTIAL` - Firebase credential JSON string. Default: `{}`
+- `FIREBASE_FROM_CONFIG_MS` - Get firebase credential from configuration microservice. Set `0` to disable. Default: `1`
 
 ## This package contains:
  - Entities

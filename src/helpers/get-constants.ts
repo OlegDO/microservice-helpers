@@ -41,6 +41,7 @@ const GetConstants = ({
   IS_OPENTELEMETRY_OTLP_URL_SRV: Boolean(Number(process.env.MS_OPENTELEMETRY_OTLP_URL_SRV || 0)),
   IS_OPENTELEMETRY_DEBUG: Boolean(Number(process.env.MS_OPENTELEMETRY_DEBUG || 0)),
   MS_CONSOLE_LOG_LEVEL: process.env.MS_CONSOLE_LOG_LEVEL || 'info',
+  IS_ENABLE_EVENTS: Boolean(Number(process.env.ENABLE_EVENTS || 0)),
   ...(withDb
     ? {
         DB: {
