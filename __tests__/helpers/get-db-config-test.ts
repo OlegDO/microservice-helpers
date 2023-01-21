@@ -1,12 +1,11 @@
 import { expect } from 'chai';
 import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import ConstantsMock from '@__mocks__/constants';
 import GetConstants from '@helpers/get-constants';
 import GetDbConfig from '@helpers/get-db-config';
 
 describe('helpers/create-db-connection', () => {
-  const msNameDefault = 'default-ms-name';
-  const version = '1.0.0';
-  const constants = GetConstants({ msNameDefault, version, withDb: true });
+  const constants = GetConstants({ ...ConstantsMock, withDb: true });
 
   it('should correctly return db config', () => {
     const { extra } = GetDbConfig(constants);
@@ -25,17 +24,17 @@ describe('helpers/create-db-connection', () => {
   });
 
   it('should correctly return config with extended package', () => {
-    const packageName = '@lomray/microservices-users';
+    const extendPackageName = '@lomray/microservices-users';
     const { entities, subscribers, migrations } = GetDbConfig(
       constants,
-      packageName,
+      extendPackageName,
     ) as PostgresConnectionOptions;
 
     expect(entities?.length).to.equal(2);
-    expect(entities?.[0] as string).to.contain(packageName);
+    expect(entities?.[0] as string).to.contain(extendPackageName);
     expect(subscribers?.length).to.equal(2);
-    expect(subscribers?.[0] as string).to.contain(packageName);
+    expect(subscribers?.[0] as string).to.contain(extendPackageName);
     expect(migrations?.length).to.equal(2);
-    expect(migrations?.[0] as string).to.contain(packageName);
+    expect(migrations?.[0] as string).to.contain(extendPackageName);
   });
 });

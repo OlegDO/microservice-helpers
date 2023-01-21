@@ -1,6 +1,7 @@
 export interface ICustomEnv {
   isBuild?: string | boolean;
   msNameDefault: string;
+  packageName: string;
   version: string;
   withDb?: boolean;
   withAWS?: boolean;
@@ -14,6 +15,7 @@ export interface ICustomEnv {
 const GetConstants = ({
   msNameDefault,
   version,
+  packageName,
   isBuild = false,
   withDb = false,
   withAWS = false,
@@ -21,6 +23,7 @@ const GetConstants = ({
 }: ICustomEnv) => ({
   IS_BUILD: isBuild,
   VERSION: version,
+  PACKAGE_NAME: packageName,
   ENV: process.env.NODE_ENV || 'development',
   IS_PROD: process.env.NODE_ENV === 'production',
   IS_DEV: process.env.NODE_ENV === 'development',
