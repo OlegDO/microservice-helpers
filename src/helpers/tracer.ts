@@ -11,18 +11,23 @@ import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import opentelemetry from '@opentelemetry/sdk-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { v4 as uuidv4 } from 'uuid';
+import type { ICommonConstants } from '@helpers/get-constants';
 import ResolveSrv from '@helpers/resolve-srv';
 import GatewayInstrumentation from '@instrumentation/gateway-instrumentation';
 import MicroserviceInstrumentation from '@instrumentation/microservice-instrumentation';
 
-export interface ITracerConfig {
-  MS_NAME: string;
-  MS_OPENTELEMETRY_ENABLE?: number;
-  MS_OPENTELEMETRY_OTLP_URL?: string;
-  MS_OPENTELEMETRY_OTLP_URL_SRV?: number;
-  MS_OPENTELEMETRY_DEBUG?: number;
-  ENVIRONMENT?: string;
-  version?: string;
+type TConstants = Pick<
+  ICommonConstants,
+  | 'MS_NAME'
+  | 'ENVIRONMENT'
+  | 'VERSION'
+  | 'MS_OPENTELEMETRY_ENABLE'
+  | 'MS_OPENTELEMETRY_OTLP_URL'
+  | 'MS_OPENTELEMETRY_OTLP_URL_SRV'
+  | 'MS_OPENTELEMETRY_DEBUG'
+>;
+
+export interface ITracerConfig extends TConstants {
   isGateway?: boolean;
 }
 
@@ -37,7 +42,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
     MS_OPENTELEMETRY_OTLP_URL_SRV,
     MS_OPENTELEMETRY_DEBUG,
     ENVIRONMENT = 'staging',
-    version = '1.0.0',
+    VERSION = '1.0.0',
     isGateway = false,
   } = constants;
 
@@ -83,7 +88,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
       instrumentations,
       resource: new Resource({
         [SemanticResourceAttributes.SERVICE_NAME]: MS_NAME,
-        [SemanticResourceAttributes.SERVICE_VERSION]: version,
+        [SemanticResourceAttributes.SERVICE_VERSION]: VERSION,
         environment: ENVIRONMENT,
         otlpInstanceId,
       }),

@@ -16,7 +16,13 @@ export { default as EntityColumns } from '@helpers/entity-columns';
 
 export { default as GetDbConfig } from '@helpers/get-db-config';
 
+export type { IDbConfig } from '@helpers/get-db-config';
+
 export * from '@helpers/launchers';
+
+export { default as GetConstants } from '@helpers/get-constants';
+
+export type { ICustomEnv, ICommonConstants } from '@helpers/get-constants';
 
 export * from '@services/endpoint';
 
@@ -35,3 +41,5 @@ export { default as Api } from '@services/api';
 export type { IServiceAccount, IFirebaseSdkParams } from '@services/firebase-sdk';
 
 export * from '@entities/ijson-query-filter';
+
+export { default as MetaEndpoint } from '@methods/meta';

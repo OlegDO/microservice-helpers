@@ -35,6 +35,7 @@
       "@entities/*": ["./src/entities/*"],
       "@helpers/*": ["./src/helpers/*"],
       "@instrumentation/*": ["./src/instrumentation/*"],
+      "@methods/*": ["./src/methods/*"],
       "@services/*": ["./src/services/*"],
       "@test-helpers/*": ["./src/test-helpers/*"],
       "@validators/*": ["./src/validators/*"],

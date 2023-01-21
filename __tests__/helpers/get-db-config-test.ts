@@ -1,11 +1,9 @@
 import { expect } from 'chai';
-import sinon from 'sinon';
 import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import GetDbConfig from '@helpers/get-db-config';
 import type { IDbConfig } from '@helpers/get-db-config';
 
 describe('helpers/create-db-connection', () => {
-  const sandbox = sinon.createSandbox();
   const options: IDbConfig = {
     host: 'localhost',
     username: 'hello',
@@ -16,10 +14,6 @@ describe('helpers/create-db-connection', () => {
     workers: 2,
     database: 'db',
   };
-
-  afterEach(() => {
-    sandbox.restore();
-  });
 
   it('should correctly return db config', () => {
     const { extra } = GetDbConfig(options);

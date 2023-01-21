@@ -41,7 +41,6 @@ export interface IStartConfig {
 
 export interface IStartConfigWithDb extends IStartConfig {
   dbOptions: ConnectionOptions;
-  shouldUseDbRemoteOptions?: boolean;
 }
 
 /**
@@ -147,17 +146,13 @@ const start = async ({
  * 2. Create db connection
  * 3. Start microservice
  */
-const startWithDb = ({
-  dbOptions,
-  shouldUseDbRemoteOptions = true,
-  ...config
-}: IStartConfigWithDb): Promise<void> =>
+const startWithDb = ({ dbOptions, ...config }: IStartConfigWithDb): Promise<void> =>
   start({
     ...config,
     hooks: {
       ...(config.hooks ?? {}),
       afterCreateMicroservice: async (...hookParams) => {
-        await CreateDbConnection(dbOptions, shouldUseDbRemoteOptions);
+        await CreateDbConnection(dbOptions, config.remoteConfig?.isEnable ?? true);
         await config?.hooks?.afterCreateMicroservice?.(...hookParams);
       },
     },
