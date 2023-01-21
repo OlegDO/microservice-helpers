@@ -1,5 +1,5 @@
 export interface ICustomEnv {
-  IS_BUILD: string | boolean;
+  IS_BUILD?: string | boolean;
   MS_NAME_DEFAULT: string;
   VERSION: string;
 }
@@ -8,7 +8,7 @@ export interface ICustomEnv {
  * Get common microservices constants
  * @constructor
  */
-const GetConstants = ({ IS_BUILD, MS_NAME_DEFAULT, VERSION }: ICustomEnv) => ({
+const GetConstants = ({ MS_NAME_DEFAULT, VERSION, IS_BUILD = false }: ICustomEnv) => ({
   IS_BUILD,
   VERSION,
   ENV: process.env.NODE_ENV || 'development',
