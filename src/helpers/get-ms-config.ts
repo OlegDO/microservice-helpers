@@ -1,44 +1,32 @@
-import _ from 'lodash';
+import type { IMicroserviceOptions, IMicroserviceParams } from '@lomray/microservice-nodejs-lib';
+import { ConsoleLogDriver, LogType } from '@lomray/microservice-nodejs-lib';
 import type { ICommonConstants } from '@helpers/get-constants';
-import type { IStartConfig, IStartConfigWithDb } from '@helpers/launchers';
-
-export type TOverloadMsConfigParams<T extends ICommonConstants> = T['DB'] extends undefined
-  ? IStartConfig
-  : IStartConfigWithDb;
+import Log from '@services/log';
 
 /**
- * Get default microservice config
+ * Get default microservice options
  */
-const getMsConfig = <T extends ICommonConstants>(
-  {
-    MS_GRAFANA_LOKI_CONFIG,
-    IS_ENABLE_GRAFANA_LOG,
-    MS_CONSOLE_LOG_LEVEL,
-    IS_ENABLE_REMOTE_MIDDLEWARE,
-    IS_ENABLE_EVENTS,
-    ...OTHER
-  }: T,
-  params: TOverloadMsConfigParams<T>,
-): TOverloadMsConfigParams<T> =>
-  _.merge(
-    {
-      logGrafana: MS_GRAFANA_LOKI_CONFIG || IS_ENABLE_GRAFANA_LOG,
-      logConsoleLevel: MS_CONSOLE_LOG_LEVEL,
-      remoteMiddleware: {
-        isEnable: IS_ENABLE_REMOTE_MIDDLEWARE,
-        type: 'client',
-      },
-      ...(OTHER.DB
-        ? {
-            // for local run without configuration ms this should be set to false (or use RunConfiguration IDE)
-            shouldUseDbRemoteOptions: OTHER.DB.IS_FROM_CONFIG_MS,
-          }
-        : {}),
-    },
-    {
-      ...params,
-      registerEvents: IS_ENABLE_EVENTS ? params.registerEvents : undefined,
-    },
-  );
+const GetMsOptions = ({
+  MS_NAME,
+  MS_CONNECTION,
+  IS_CONNECTION_SRV,
+  MS_WORKERS,
+  VERSION,
+}: ICommonConstants): Partial<IMicroserviceOptions> => ({
+  name: MS_NAME,
+  connection: MS_CONNECTION,
+  isSRV: IS_CONNECTION_SRV,
+  workers: MS_WORKERS,
+  version: VERSION,
+});
 
-export default getMsConfig;
+/**
+ * Get default microservice params
+ */
+const GetMsParams = (): Partial<IMicroserviceParams> => ({
+  logDriver: ConsoleLogDriver((message, { type }) =>
+    Log.log(type === LogType.ERROR ? 'error' : 'info', message),
+  ),
+});
+
+export { GetMsOptions, GetMsParams };

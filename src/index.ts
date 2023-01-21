@@ -16,9 +16,11 @@ export { default as EntityColumns } from '@helpers/entity-columns';
 
 export { default as GetDbConfig } from '@helpers/get-db-config';
 
-export { default as GetMsConfig } from '@helpers/get-ms-config';
+export * from '@helpers/get-ms-config';
 
-export type { TOverloadMsConfigParams } from '@helpers/get-ms-config';
+export { default as GetMsStartConfig } from '@helpers/get-ms-start-config';
+
+export type { TOverloadMsStartConfigParams } from '@helpers/get-ms-start-config';
 
 export * from '@helpers/launchers';
 
