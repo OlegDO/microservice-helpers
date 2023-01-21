@@ -1,23 +1,33 @@
 export interface ICustomEnv {
-  IS_BUILD?: string | boolean;
-  MS_NAME_DEFAULT: string;
-  VERSION: string;
+  isBuild?: string | boolean;
+  msNameDefault: string;
+  version: string;
+  withDb?: boolean;
+  withAWS?: boolean;
+  withFirebase?: boolean;
 }
 
 /**
  * Get common microservices constants
  * @constructor
  */
-const GetConstants = ({ MS_NAME_DEFAULT, VERSION, IS_BUILD = false }: ICustomEnv) => ({
-  IS_BUILD,
-  VERSION,
+const GetConstants = ({
+  msNameDefault,
+  version,
+  isBuild = false,
+  withDb = false,
+  withAWS = false,
+  withFirebase = false,
+}: ICustomEnv) => ({
+  IS_BUILD: isBuild,
+  VERSION: version,
   ENV: process.env.NODE_ENV || 'development',
   IS_PROD: process.env.NODE_ENV === 'production',
   IS_DEV: process.env.NODE_ENV === 'development',
   IS_TEST: process.env.NODE_ENV === 'tests',
   ENVIRONMENT: process.env.ENVIRONMENT || 'prod',
-  SRC_FOLDER: IS_BUILD ? 'lib' : 'src',
-  MS_NAME: process.env.MS_NAME || MS_NAME_DEFAULT,
+  SRC_FOLDER: isBuild ? 'lib' : 'src',
+  MS_NAME: process.env.MS_NAME || msNameDefault,
   MS_CONFIG_NAME: process.env.MS_CONFIG_NAME || 'configuration',
   MS_CONNECTION: process.env.MS_CONNECTION,
   MS_CONNECTION_SRV: Boolean(process.env.MS_CONNECTION_SRV ?? false),
@@ -31,16 +41,52 @@ const GetConstants = ({ MS_NAME_DEFAULT, VERSION, IS_BUILD = false }: ICustomEnv
   MS_OPENTELEMETRY_OTLP_URL_SRV: Number(process.env.MS_OPENTELEMETRY_OTLP_URL_SRV || 0),
   MS_OPENTELEMETRY_DEBUG: Number(process.env.MS_OPENTELEMETRY_DEBUG || 0),
   MS_CONSOLE_LOG_LEVEL: process.env.MS_CONSOLE_LOG_LEVEL || 'info',
-  DB_ENV: {
-    URL: process.env.DB_URL,
-    HOST: process.env.DB_HOST || '127.0.0.1',
-    PORT: Number(process.env.DB_PORT) || 5432,
-    USERNAME: process.env.DB_USERNAME || 'postgres',
-    PASSWORD: process.env.DB_PASSWORD || 'example',
-    DATABASE: process.env.DB_DATABASE || `ms-${process.env.MS_NAME || MS_NAME_DEFAULT}`,
-  },
+  ...(withDb
+    ? {
+        DB: {
+          URL: process.env.DB_URL,
+          HOST: process.env.DB_HOST || '127.0.0.1',
+          PORT: Number(process.env.DB_PORT) || 5432,
+          USERNAME: process.env.DB_USERNAME || 'postgres',
+          PASSWORD: process.env.DB_PASSWORD || 'example',
+          DATABASE: process.env.DB_DATABASE || `ms-${process.env.MS_NAME || msNameDefault}`,
+          IS_FROM_CONFIG_MS: Boolean(Number(process.env.DB_FROM_CONFIG_MS ?? 1)),
+        },
+      }
+    : {}),
+  ...(withAWS
+    ? {
+        AWS: {
+          ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || '',
+          SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY || '',
+          REGION: process.env.AWS_REGION || '',
+          BUCKET_NAME: process.env.AWS_BUCKET_NAME || '',
+          BUCKET_ACL: process.env.AWS_BUCKET_ACL || '',
+          IS_FROM_CONFIG_MS: Boolean(Number(process.env.AWS_FROM_CONFIG_MS ?? 1)),
+        },
+      }
+    : {}),
+  ...(withFirebase
+    ? {
+        FIREBASE: {
+          CREDENTIAL: JSON.parse(process.env.FIREBASE_FROM_CONFIG_MS || '{}'),
+          IS_FROM_CONFIG_MS: Boolean(Number(process.env.FIREBASE_FROM_CONFIG_MS ?? 1)),
+        },
+      }
+    : {}),
 });
 
 export type ICommonConstants = ReturnType<typeof GetConstants>;
 
-export default GetConstants;
+export type ICommonConstantsClean = Omit<ICommonConstants, 'AWS' | 'DB' | 'FIREBASE'>;
+
+export type TOverloadReturn<T extends ICustomEnv> = ICommonConstantsClean &
+  (T['withDb'] extends true ? Required<Pick<ICommonConstants, 'DB'>> : Record<string, never>) &
+  (T['withAWS'] extends true ? Required<Pick<ICommonConstants, 'AWS'>> : Record<string, never>) &
+  (T['withFirebase'] extends true
+    ? Required<Pick<ICommonConstants, 'FIREBASE'>>
+    : Record<string, never>);
+
+export type IOverloadFunc = <T extends ICustomEnv>(params: T) => TOverloadReturn<T>;
+
+export default GetConstants as IOverloadFunc;
