@@ -20,10 +20,6 @@ export type { IDbConfig } from '@helpers/get-db-config';
 
 export * from '@helpers/launchers';
 
-export { default as GetConstants } from '@helpers/get-constants';
-
-export type { ICustomEnv, ICommonConstants } from '@helpers/get-constants';
-
 export * from '@services/endpoint';
 
 export * from '@services/microservice-meta';

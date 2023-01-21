@@ -43,7 +43,7 @@
  - Helpers
     - Launchers (with/without db)
     - Create DB connection
-    - Get common microservices constants ([see list ENVIRONMENT](#common-environments-))
+    - Get common microservices constants ([see list ENVIRONMENT](#common-environments))
     - Get entity columns (EntityColumns)
     - Redact secrets for console outputs
     - Resolve SRV records
