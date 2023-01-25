@@ -10,6 +10,12 @@ export { default as IsTypeormDate } from '@validators/is-typeorm-date';
 
 export { default as IsTimestamp } from '@validators/is-timestamp';
 
+export { default as IsMatch } from '@validators/is-match';
+
+export { default as IsNotMatch } from '@validators/is-not-match';
+
+export { default as IsCondition } from '@validators/is-condition';
+
 export { default as CreateDbConnection } from '@helpers/create-db-connection';
 
 export { default as EntityColumns } from '@helpers/entity-columns';
