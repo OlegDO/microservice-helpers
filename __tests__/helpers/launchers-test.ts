@@ -11,6 +11,7 @@ import type { ConnectionOptions } from 'typeorm';
 import type {
   start as OriginalStart,
   startWithDb as OriginalStartWithDb,
+  run as OriginalRun,
 } from '@helpers/launchers';
 import { TypeormMock } from '@mocks/index';
 import Log from '@services/log';
@@ -18,9 +19,10 @@ import RemoteConfig from '@services/remote-config';
 import waitResult from '@test-helpers/wait-result';
 
 const CreateDbConnection = sinon.stub().resolves();
-const { start, startWithDb } = rewiremock.proxy<{
+const { start, startWithDb, run } = rewiremock.proxy<{
   startWithDb: typeof OriginalStartWithDb;
   start: typeof OriginalStart;
+  run: typeof OriginalRun;
 }>(() => require('@helpers/launchers'), {
   '@helpers/create-db-connection': CreateDbConnection,
 });
@@ -37,6 +39,7 @@ describe('helpers/launchers', () => {
 
   afterEach(() => {
     sandbox.restore();
+    CreateDbConnection.reset();
   });
 
   it('should correctly start microservice with db connection', async () => {
@@ -208,5 +211,34 @@ describe('helpers/launchers', () => {
     });
 
     expect(enableLokiStub).to.calledOnce;
+  });
+
+  it('should correctly run microservice without db', async () => {
+    sandbox.stub(Microservice.getInstance(), 'start').resolves();
+
+    await run({
+      type: 'microservice',
+      msOptions,
+      msParams,
+      remoteMiddleware: { isEnable: false, type: 'client' },
+      remoteConfig: { isEnable: false },
+    });
+
+    expect(CreateDbConnection).to.not.calledOnce;
+  });
+
+  it('should correctly run microservice with db', async () => {
+    sandbox.stub(Microservice.getInstance(), 'start').resolves();
+
+    await run({
+      type: 'microservice',
+      msOptions,
+      msParams,
+      dbOptions,
+      remoteMiddleware: { isEnable: false, type: 'client' },
+      remoteConfig: { isEnable: false },
+    });
+
+    expect(CreateDbConnection).to.calledOnce;
   });
 });

@@ -163,4 +163,10 @@ const startWithDb = ({
     },
   });
 
-export { start, startWithDb };
+/**
+ * Choose launcher depends on params and run microservice
+ */
+const run = (params: IStartConfig | IStartConfigWithDb): Promise<void> =>
+  'dbOptions' in params ? startWithDb(params) : start(params);
+
+export { start, startWithDb, run };

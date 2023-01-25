@@ -1,3 +1,4 @@
+import { RequiredOnlyProps } from '@lomray/client-helpers/interfaces/required-props';
 import type { ConnectionOptions } from 'typeorm';
 import type { ICommonConstants } from '@helpers/get-constants';
 
@@ -5,12 +6,7 @@ import type { ICommonConstants } from '@helpers/get-constants';
  * Database connection options
  */
 const getDbConfig = (
-  {
-    IS_BUILD,
-    SRC_FOLDER,
-    MS_WORKERS,
-    DB,
-  }: ICommonConstants & Required<Pick<ICommonConstants, 'DB'>>,
+  { IS_BUILD, SRC_FOLDER, MS_WORKERS, DB }: RequiredOnlyProps<ICommonConstants, 'DB'>,
   extendPackageName?: string,
 ): ConnectionOptions => {
   const rootPath = SRC_FOLDER;
