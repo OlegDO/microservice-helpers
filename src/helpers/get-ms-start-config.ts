@@ -13,13 +13,20 @@ export type TOverloadMsStartConfigParams<T extends Record<string, any>> = T['DB'
   ? PartialProps<IStartConfigWithDb, 'msOptions' | 'msParams' | 'dbOptions'>
   : PartialProps<IStartConfig, 'msOptions' | 'msParams'>;
 
+export type TOverloadMsStartConfigReturn<T extends Record<string, any>> = T['DB'] extends Record<
+  string,
+  any
+>
+  ? IStartConfigWithDb
+  : IStartConfig;
+
 /**
  * Get default microservice start config
  */
 const getMsStartConfig = <T extends ICommonConstants>(
   CONST: T,
   params: TOverloadMsStartConfigParams<T>,
-): TOverloadMsStartConfigParams<T> => {
+): TOverloadMsStartConfigReturn<T> => {
   const {
     MS_GRAFANA_LOKI_CONFIG,
     IS_ENABLE_GRAFANA_LOG,
@@ -51,7 +58,7 @@ const getMsStartConfig = <T extends ICommonConstants>(
       ...params,
       registerEvents: IS_ENABLE_EVENTS ? params.registerEvents : undefined,
     },
-  );
+  ) as TOverloadMsStartConfigReturn<T>;
 };
 
 export default getMsStartConfig;
