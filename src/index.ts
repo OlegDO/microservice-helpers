@@ -16,6 +16,8 @@ export { default as IsNotMatch } from '@validators/is-not-match';
 
 export { default as IsCondition } from '@validators/is-condition';
 
+export { default as IsValidate } from '@validators/is-validate';
+
 export { default as CreateDbConnection } from '@helpers/create-db-connection';
 
 export { default as EntityColumns } from '@helpers/entity-columns';
