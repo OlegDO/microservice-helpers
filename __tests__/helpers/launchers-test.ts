@@ -98,6 +98,7 @@ describe('helpers/launchers', () => {
     expect(remoteConfigStub).to.calledOnceWith(Microservice.getInstance(), {
       msName: msOptions.name,
       msConfigName: 'configuration',
+      isOffline: false,
     });
     expect(registerMethodsStub).to.calledOnceWith(Microservice.getInstance());
     expect(registerEventsStub).to.calledOnceWith(Microservice.getInstance());
@@ -131,7 +132,7 @@ describe('helpers/launchers', () => {
         type: 'server',
         getRepository: () => ({ this: 'is repository' } as unknown as IMiddlewareRepository),
       },
-      remoteConfig: { isEnable: false },
+      remoteConfig: { isDisable: false },
       hooks: {
         afterCreateMicroservice: (gateway) => {
           stubbedStart = sandbox.stub(gateway, 'start').resolves();
@@ -151,17 +152,18 @@ describe('helpers/launchers', () => {
   it('should correctly start microservice without remote middleware & remote config', async () => {
     sandbox.stub(Microservice.getInstance(), 'start').resolves();
     sandbox.stub(RemoteMiddlewareClient, 'instance' as never).value(undefined);
+    sandbox.stub(RemoteConfig, 'instance' as never).value(undefined);
 
     await start({
       type: 'microservice',
       msOptions,
       msParams,
       remoteMiddleware: { isEnable: false, type: 'client' },
-      remoteConfig: { isEnable: false },
+      remoteConfig: { isDisable: true },
     });
 
     expect(RemoteMiddlewareClient.getInstance()).to.undefined;
-    expect(() => RemoteConfig.getInstance()).to.throw('Remote config service should');
+    expect(RemoteConfig.getInstance()).property('params').property('isOffline').equal(true);
   });
 
   it('should throw error if microservice start failed', async () => {
@@ -172,7 +174,7 @@ describe('helpers/launchers', () => {
       msOptions,
       msParams,
       remoteMiddleware: { isEnable: false, type: 'client' },
-      remoteConfig: { isEnable: false },
+      remoteConfig: { isDisable: true },
     });
 
     expect(await waitResult(res)).to.throw();
@@ -189,7 +191,7 @@ describe('helpers/launchers', () => {
       msParams,
       logGrafana: { host: 'https://demo.host' },
       remoteMiddleware: { isEnable: false, type: 'client' },
-      remoteConfig: { isEnable: false },
+      remoteConfig: { isDisable: true },
     });
 
     expect(enableLokiStub).to.calledOnce;
@@ -207,7 +209,7 @@ describe('helpers/launchers', () => {
       msParams,
       logGrafana: true,
       remoteMiddleware: { isEnable: false, type: 'client' },
-      remoteConfig: { isEnable: false },
+      remoteConfig: { isDisable: true },
     });
 
     expect(enableLokiStub).to.calledOnce;
@@ -221,7 +223,7 @@ describe('helpers/launchers', () => {
       msOptions,
       msParams,
       remoteMiddleware: { isEnable: false, type: 'client' },
-      remoteConfig: { isEnable: false },
+      remoteConfig: { isDisable: true },
     });
 
     expect(CreateDbConnection).to.not.calledOnce;
@@ -236,7 +238,7 @@ describe('helpers/launchers', () => {
       msParams,
       dbOptions,
       remoteMiddleware: { isEnable: false, type: 'client' },
-      remoteConfig: { isEnable: false },
+      remoteConfig: { isDisable: true },
     });
 
     expect(CreateDbConnection).to.calledOnce;

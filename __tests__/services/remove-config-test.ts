@@ -13,10 +13,16 @@ describe('services/remote-config', () => {
     msName: 'msName',
     msConfigName: 'msConfigName',
     resetCacheEndpoint: 'reset-cache',
+    isOffline: false,
   };
   const result = { param: 1 };
   const otherParams = { other: true };
   let msAddEndpointStub: SinonStub | undefined;
+
+  before(() => {
+    // reset singleton
+    sinon.stub(RemoteConfig, 'instance' as never).value(undefined);
+  });
 
   afterEach(() => {
     sandbox.restore();
@@ -48,6 +54,14 @@ describe('services/remote-config', () => {
     const res = await RemoteConfig.get('db');
 
     expect(res).to.deep.equal(result);
+  });
+
+  it('should correctly return default value if remote config empty', async () => {
+    sandbox.stub(ms, 'sendRequest').resolves(new MicroserviceResponse({}));
+
+    const res = await RemoteConfig.get('myDefault', { defaultValue: 789 });
+
+    expect(res).to.equal(789);
   });
 
   it('should correctly get common remote config if personal not exist', async () => {
@@ -140,5 +154,17 @@ describe('services/remote-config', () => {
     expect(cachedResult).to.not.deep.equal({}); // not empty
     expect(res).to.deep.equal({ isReset: true });
     expect(RemoteConfig.getCachedSync('db')).to.null; // success reset cache
+  });
+
+  it('should correctly get config in offline mode', async () => {
+    sandbox.stub(RemoteConfig, 'instance' as never).value(undefined);
+
+    RemoteConfig.init(ms, { ...params, isOffline: true });
+
+    const res = await RemoteConfig.get('notExist');
+    const res2 = await RemoteConfig.get('default', { defaultValue: 123 });
+
+    expect(res).to.undefined;
+    expect(res2).to.equal(123);
   });
 });

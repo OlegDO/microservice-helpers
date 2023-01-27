@@ -44,6 +44,10 @@ const getMsStartConfig = <T extends ICommonConstants>(
         isEnable: IS_ENABLE_REMOTE_MIDDLEWARE,
         type: 'client',
       },
+      remoteConfig: {
+        isDisable: !CONST.IS_REMOTE_CONFIG_ENABLE,
+        msConfigName: CONST.MS_CONFIG_NAME,
+      },
       msOptions: GetMsOptions(CONST),
       msParams: GetMsParams(),
       ...(OTHER.DB

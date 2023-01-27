@@ -6,7 +6,15 @@ import { Endpoint } from '@services/endpoint';
 interface IRemoteConfigParams {
   msName: string;
   msConfigName: string;
+  isOffline: boolean;
   resetCacheEndpoint?: string;
+}
+
+interface IRemoteConfigOptions<TParams> {
+  isForce?: boolean;
+  isThrowNotExist?: boolean;
+  isCommon?: boolean;
+  defaultValue?: TParams;
 }
 
 class RemoteConfigOutput {
@@ -74,7 +82,7 @@ class RemoteConfig {
    * Add endpoint for reset config cache
    * @private
    */
-  private addResetCacheEndpoint() {
+  private addResetCacheEndpoint(): void {
     const { resetCacheEndpoint = 'config-reset' } = this.params;
 
     this.ms.addEndpoint(
@@ -93,7 +101,7 @@ class RemoteConfig {
   /**
    * Get cached config synchronously
    */
-  static getCachedSync<TParams = Record<string, any> | undefined>(
+  public static getCachedSync<TParams = Record<string, any> | undefined>(
     paramName: string,
   ): TParams | null {
     const self = RemoteConfig.getInstance();
@@ -108,11 +116,16 @@ class RemoteConfig {
   /**
    * Get remote config
    */
-  static async get<TParams = Record<string, any> | undefined>(
+  public static async get<TParams = Record<string, any> | undefined>(
     paramName: string,
-    options?: { isForce?: boolean; isThrowNotExist?: boolean; isCommon?: boolean },
+    options?: IRemoteConfigOptions<TParams>,
   ): Promise<TParams> {
-    const { isForce = false, isThrowNotExist = false, isCommon = false } = options ?? {};
+    const {
+      isForce = false,
+      isThrowNotExist = false,
+      isCommon = false,
+      defaultValue,
+    } = options ?? {};
     const self = RemoteConfig.getInstance();
     const cachedConfig = RemoteConfig.getCachedSync<TParams>(paramName);
 
@@ -120,22 +133,31 @@ class RemoteConfig {
       return cachedConfig;
     }
 
-    const { msName, msConfigName } = self.params;
+    let result;
 
-    const config = await self.ms.sendRequest<{ query: IJsonQuery }>(`${msConfigName}.config.view`, {
-      query: {
-        where: {
-          type: paramName,
-          or: [{ microservice: msName }, ...(isCommon ? [{ microservice: '*' }] : [])],
+    if (!self.params.isOffline) {
+      const { msName, msConfigName } = self.params;
+
+      const config = await self.ms.sendRequest<{ query: IJsonQuery }>(
+        `${msConfigName}.config.view`,
+        {
+          query: {
+            where: {
+              type: paramName,
+              or: [{ microservice: msName }, ...(isCommon ? [{ microservice: '*' }] : [])],
+            },
+          },
         },
-      },
-    });
+      );
 
-    if (config.getError()) {
-      throw config.getError();
+      if (config.getError()) {
+        throw config.getError();
+      }
+
+      result = config.getResult()?.entity?.params ?? defaultValue;
+    } else {
+      result = defaultValue;
     }
-
-    const result = config.getResult()?.entity?.params;
 
     if (!result && isThrowNotExist) {
       throw new Error(`Configuration for param "${paramName}" doesn't exist.`);

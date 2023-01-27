@@ -28,7 +28,7 @@ export interface IStartConfig {
   registerMethods?: (ms: Microservice | Gateway) => Promise<void> | void;
   registerEvents?: (ms: Microservice | Gateway) => Promise<void> | void;
   remoteMiddleware?: TRemoteMiddleware;
-  remoteConfig?: { isEnable?: boolean; msConfigName?: string };
+  remoteConfig?: { isDisable?: boolean; msConfigName?: string };
   logGrafana?: ILokiTransportOptions | boolean;
   logConsoleLevel?: string;
   hooks?: {
@@ -82,12 +82,11 @@ const start = async ({
     const microservice = (type === 'gateway' ? Gateway : Microservice).create(msOptions, msParams);
 
     // Enable remote config (enabled by default)
-    if (remoteConfig?.isEnable ?? true) {
-      RemoteConfig.init(microservice, {
-        msName: msOptions.name as string,
-        msConfigName: remoteConfig?.msConfigName || 'configuration',
-      });
-    }
+    RemoteConfig.init(microservice, {
+      msName: msOptions.name as string,
+      msConfigName: remoteConfig?.msConfigName || 'configuration',
+      isOffline: remoteConfig?.isDisable ?? false,
+    });
 
     // Enable grafana loki transport
     if (logGrafana) {
