@@ -32,9 +32,11 @@
     "paths": {
       "@__mocks__/*": ["./__mocks__/*"],
       "@mocks/*": ["./src/mocks/*"],
+      "@config/*": ["./src/config/*"],
       "@entities/*": ["./src/entities/*"],
       "@helpers/*": ["./src/helpers/*"],
       "@instrumentation/*": ["./src/instrumentation/*"],
+      "@interfaces/*": ["./src/interfaces/*"],
       "@methods/*": ["./src/methods/*"],
       "@services/*": ["./src/services/*"],
       "@test-helpers/*": ["./src/test-helpers/*"],

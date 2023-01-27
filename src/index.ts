@@ -1,3 +1,7 @@
+export { default as awsConfig } from '@config/aws';
+
+export { default as firebaseConfig } from '@config/firebase';
+
 export { default as IsUndefinable } from '@validators/is-undefinable';
 
 export { default as IsNullable } from '@validators/is-nullable';
@@ -51,3 +55,7 @@ export type { IServiceAccount, IFirebaseSdkParams } from '@services/firebase-sdk
 export * from '@entities/ijson-query-filter';
 
 export { default as MetaEndpoint } from '@methods/meta';
+
+export * from '@interfaces/aws-config';
+
+export * from '@interfaces/firebase-config';
