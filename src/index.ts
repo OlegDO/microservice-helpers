@@ -46,11 +46,7 @@ export type { ILokiTransportOptions } from '@services/log';
 
 export { default as RemoteConfig } from '@services/remote-config';
 
-export { default as FirebaseSdk } from '@services/firebase-sdk';
-
 export { default as Api } from '@services/api';
-
-export type { IServiceAccount, IFirebaseSdkParams } from '@services/firebase-sdk';
 
 export * from '@entities/ijson-query-filter';
 
