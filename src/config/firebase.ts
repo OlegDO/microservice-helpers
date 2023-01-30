@@ -1,7 +1,7 @@
-import { RequiredOnlyProps } from '@lomray/client-helpers/interfaces/required-props';
-import { ICommonConstants } from '@helpers/get-constants';
-import { IFirebaseConfig } from '@interfaces/firebase-config';
-import RemoteConfig from '../services/remote-config';
+import type { RequiredOnlyProps } from '@lomray/client-helpers/interfaces/required-props';
+import type { ICommonConstants } from '@helpers/get-constants';
+import type { IFirebaseConfig } from '@interfaces/firebase-config';
+import RemoteConfig from '@services/remote-config';
 
 /**
  * Get Firebase config
@@ -11,7 +11,6 @@ const firebase = async ({
 }: RequiredOnlyProps<ICommonConstants, 'FIREBASE'>): Promise<IFirebaseConfig> => {
   const conf = FIREBASE.IS_FROM_CONFIG_MS
     ? await RemoteConfig.get<IFirebaseConfig>('firebase', {
-        isThrowNotExist: true,
         isCommon: true,
       })
     : {};

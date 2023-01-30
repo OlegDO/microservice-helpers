@@ -1,8 +1,8 @@
-import { RequiredOnlyProps } from '@lomray/client-helpers/interfaces/required-props';
+import type { RequiredOnlyProps } from '@lomray/client-helpers/interfaces/required-props';
 import _ from 'lodash';
-import { ICommonConstants } from '@helpers/get-constants';
+import type { ICommonConstants } from '@helpers/get-constants';
 import type { IAwsConfig } from '@interfaces/aws-config';
-import RemoteConfig from '../services/remote-config';
+import RemoteConfig from '@services/remote-config';
 
 /**
  * Get AWS config
