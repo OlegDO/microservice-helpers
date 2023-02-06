@@ -5,7 +5,13 @@ describe('helpers/redact-secrets', () => {
   const redacted = '[REDACTED]';
 
   it('should correctly replace secrets values in string', () => {
+    const testCircular = { a: {} };
+
+    testCircular.a = testCircular;
+
     const cases = [
+      // test circular object input
+      { input: { refresh: '12345', testCircular }, output: { refresh: redacted, testCircular } },
       { input: { password: '1235' }, output: { password: redacted } },
       { input: { deep: { password: '1235' } }, output: { deep: { password: redacted } } },
       {

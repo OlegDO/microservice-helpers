@@ -1,4 +1,5 @@
-import { klona } from 'klona/lite';
+import { klona } from 'klona/full';
+import _ from 'lodash';
 import traverse from 'traverse';
 
 const sensitiveKeys = [
@@ -81,15 +82,28 @@ const redact = (obj: Record<string | symbol, any>): Record<string | symbol, any>
     return obj;
   }
 
-  const copy = klona(obj); // Making a deep copy to prevent side effects
+  try {
+    const copy = klona(obj); // Making a deep copy to prevent side effects
 
-  redactObject(copy);
+    redactObject(copy);
 
-  const splat = copy[Symbol.for('splat')] as Record<string, any>;
+    const splat = copy[Symbol.for('splat')] as Record<string, any>;
 
-  redactObject(splat); // Specifically redact splat Symbol
+    redactObject(splat); // Specifically redact splat Symbol
 
-  return copy;
+    return copy;
+  } catch (e) {
+    // fallback to lodash deep clone
+    if (e.name === 'RangeError') {
+      const copy = _.cloneDeep(obj);
+
+      redactObject(copy);
+
+      return copy;
+    }
+
+    return { ...obj, message: 'Failed redact secrets' };
+  }
 };
 
 export default redact;
