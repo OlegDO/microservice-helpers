@@ -27,7 +27,7 @@
 - `MS_OPENTELEMETRY_OTLP_URL` - Custom opentelemetry OTLP exporter URL. Default: `undefined`
 - `MS_OPENTELEMETRY_OTLP_URL_SRV` - Custom opentelemetry OTLP URL it is SRV record. Default: `0`
 - `MS_OPENTELEMETRY_DEBUG` - Enable debug log opentelemetry. Default: `0`
-- `MS_CONSOLE_LOG_LEVEL` - Change console log level. Default: `info`
+- `MS_CONSOLE_LOG_LEVEL` - Change console log level, [see all levels](https://github.com/winstonjs/winston#logging-levels). Default: `info`
 
 ## COMMON ENVIRONMENTS - DB SUPPORT:
 - `DB_URL` - Database url connection string. Default: `undefined`. Please use URL or credentials.
