@@ -1,4 +1,4 @@
-import { klona } from 'klona/full';
+import { klona } from 'klona/lite';
 import traverse from 'traverse';
 
 const sensitiveKeys = [
