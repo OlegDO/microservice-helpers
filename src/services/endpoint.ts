@@ -88,7 +88,10 @@ export type ITypeormRequestParams<TEntity, TPayload> = TPayload & {
 
 export type IRequestPayload<TEntity, TPayload> = TPayload & {
   authorization?: {
-    filter?: IJsonQuery<TEntity>;
+    filter?: {
+      options?: Partial<ITypeormJsonQueryOptions>;
+      query?: IJsonQuery<TEntity>;
+    };
   };
 };
 
