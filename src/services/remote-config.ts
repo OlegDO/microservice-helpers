@@ -148,6 +148,7 @@ class RemoteConfig {
             },
           },
         },
+        { isThrowError: false },
       );
 
       if (config.getError() && config.getError()?.code !== CRUD_EXCEPTION_CODE.ENTITY_NOT_FOUND) {
