@@ -33,7 +33,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@lomray/microservice-nodejs-lib": "^2.15.0",
+    "@lomray/microservice-nodejs-lib": "^2.16.0",
     "@lomray/microservice-remote-middleware": "^1.7.6",
     "@lomray/microservices-types": "^1.7.3",
     "@lomray/typeorm-json-query": "^2.1.2",
