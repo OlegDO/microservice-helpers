@@ -1,7 +1,7 @@
 import type { AbstractMicroservice } from '@lomray/microservice-nodejs-lib';
 import type { IJsonQuery } from '@lomray/microservices-types';
 import { IsBoolean } from 'class-validator';
-import { Endpoint } from '@services/endpoint';
+import { Endpoint, CRUD_EXCEPTION_CODE } from '@services/endpoint';
 
 interface IRemoteConfigParams {
   msName: string;
@@ -150,7 +150,7 @@ class RemoteConfig {
         },
       );
 
-      if (config.getError()) {
+      if (config.getError() && config.getError()?.code !== CRUD_EXCEPTION_CODE.ENTITY_NOT_FOUND) {
         throw config.getError();
       }
 

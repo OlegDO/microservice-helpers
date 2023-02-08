@@ -1564,4 +1564,5 @@ export {
   RestoreOutputParams,
   CACHE_KEYS,
   getCrudCacheKey,
+  CRUD_EXCEPTION_CODE,
 };
