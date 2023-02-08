@@ -10,6 +10,7 @@ import RemoteConfig from '@services/remote-config';
 const aws = async ({ AWS }: RequiredOnlyProps<ICommonConstants, 'AWS'>): Promise<IAwsConfig> => {
   const conf = AWS.IS_FROM_CONFIG_MS
     ? await RemoteConfig.get<IAwsConfig>('aws', {
+        isThrowNotExist: true,
         isCommon: true,
       })
     : {};

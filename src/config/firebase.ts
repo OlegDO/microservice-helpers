@@ -11,6 +11,7 @@ const firebase = async ({
 }: RequiredOnlyProps<ICommonConstants, 'FIREBASE'>): Promise<IFirebaseConfig> => {
   const conf = FIREBASE.IS_FROM_CONFIG_MS
     ? await RemoteConfig.get<IFirebaseConfig>('firebase', {
+        isThrowNotExist: true,
         isCommon: true,
       })
     : {};

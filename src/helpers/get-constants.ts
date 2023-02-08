@@ -73,7 +73,7 @@ const GetConstants = ({
   ...(withFirebase
     ? {
         FIREBASE: {
-          CREDENTIAL: JSON.parse(process.env.FIREBASE_FROM_CONFIG_MS || '{}'),
+          CREDENTIAL: JSON.parse(process.env.FIREBASE_CREDENTIAL || '{}'),
           IS_FROM_CONFIG_MS: Boolean(Number(process.env.FIREBASE_FROM_CONFIG_MS ?? 1)),
         },
       }
