@@ -484,10 +484,19 @@ describe('services/endpoint', () => {
       expect(result).to.deep.equal({ ...entity, payloadParam: 1 });
     });
 
-    it('handler - should throw error: empty view condition', async () => {
+    it('handler - should throw error: empty view condition case #1', async () => {
       defaultHandlerStub.restore();
 
       const result = Endpoint.defaultHandler.view(repository.createQueryBuilder());
+
+      expect(await waitResult(result)).to.throw(emptyConditionMessage);
+    });
+
+    it('handler - should throw error: empty view condition case #2', async () => {
+      defaultHandlerStub.restore();
+
+      const qb = repository.createQueryBuilder().where('1=1 AND ("Field"."name" = "Join"."field")');
+      const result = Endpoint.defaultHandler.view(qb);
 
       expect(await waitResult(result)).to.throw(emptyConditionMessage);
     });

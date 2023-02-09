@@ -481,7 +481,12 @@ const createTypeQuery = <TEntity, TParams, TPayload>(
 const hasEmptyCondition = <TEntity>(query: SelectQueryBuilder<TEntity>): boolean => {
   const [condition] = TypeormJsonQuery.qbWhereParse(query);
 
-  return !condition;
+  if (!condition) {
+    return true;
+  }
+
+  // condition should contain at least one parameter or equal (number | string)
+  return !/([a-z\s."]+)=\s?(:|[0-9]|')/i.test(condition);
 };
 
 /**
