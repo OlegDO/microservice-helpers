@@ -89,6 +89,14 @@ export type ITypeormRequestParams<TEntity, TPayload> = TPayload & {
 export type IRequestPayload<TEntity, TPayload> = TPayload & {
   authorization?: {
     filter?: {
+      methodOptions?: {
+        isAllowMultiple?: boolean;
+        isSoftDelete?: boolean;
+        isListWithCount?: boolean;
+        isParallel?: boolean;
+        shouldReturnEntity?: boolean;
+        shouldResetCache?: boolean;
+      };
       options?: Partial<ITypeormJsonQueryOptions>;
       query?: IJsonQuery<TEntity>;
     };
@@ -486,7 +494,7 @@ const hasEmptyCondition = <TEntity>(query: SelectQueryBuilder<TEntity>): boolean
   }
 
   // condition should contain at least one parameter or equal (number | string)
-  return !/([a-z\s."]+)=\s?(:|[0-9]|')/i.test(condition);
+  return !/([a-z\s."]+)([!=<>]+|like|is|in)\s?(:|\(:|[0-9]|')/i.test(condition);
 };
 
 /**
@@ -582,8 +590,12 @@ const getQueryCount = async <TEntity>(
  */
 const getQueryList = async <TEntity>(
   query: SelectQueryBuilder<TEntity>,
-  isWithCount: boolean,
-  { hasRemoved = false, isParallel = false, cache: { listCache = 0, countCache = 0 } = {} } = {},
+  {
+    isWithCount = true,
+    hasRemoved = false,
+    isParallel = false,
+    cache: { listCache = 0, countCache = 0 } = {},
+  } = {},
 ): Promise<ListOutputParams<TEntity>> => {
   if (hasRemoved) {
     query.withDeleted();
@@ -797,14 +809,14 @@ const removeDefaultHandler = async <TEntity>(
   repository: ICrudParams<TEntity>['repository'],
   query: SelectQueryBuilder<TEntity>,
   {
-    isAllowMultiple,
-    isSoftDelete,
-    shouldReturnEntity,
-    shouldResetCache,
+    isAllowMultiple = false,
+    isSoftDelete = false,
+    shouldReturnEntity = false,
+    shouldResetCache = false,
   }: Pick<
     IRemoveParams<TEntity, never, never>,
     'isSoftDelete' | 'isAllowMultiple' | 'shouldReturnEntity' | 'shouldResetCache'
-  >,
+  > = {},
 ): Promise<RemoveOutputParams<TEntity>> => {
   if (hasEmptyCondition(query)) {
     throw new BaseException({
@@ -1134,42 +1146,35 @@ class Endpoint {
   ): IReturnWithMeta<TEntity, TParams, TPayload, ListOutputParams<TEntity> | TResult> {
     const listHandler: IReturn<TEntity, TParams, TPayload, ListOutputParams<TEntity> | TResult> =
       async function (params, options) {
-        const {
-          repository,
-          queryOptions,
-          isListWithCount = true,
-          isParallel,
-          cache,
-        } = listOptions();
+        const { repository, queryOptions, isListWithCount, isParallel, cache } = {
+          ...listOptions(),
+          ...(params.payload?.authorization?.filter?.methodOptions ?? {}),
+        };
         const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, queryOptions);
         const result = await handler(typeQuery, params, options);
         const { hasRemoved } = params;
-        const defaultParams = { hasRemoved, isParallel, cache };
+        const defaultParams = { isWithCount: isListWithCount, hasRemoved, isParallel, cache };
 
         if (result instanceof TypeormJsonQuery) {
-          return Endpoint.defaultHandler.list(result.toQuery(), isListWithCount, defaultParams);
+          return Endpoint.defaultHandler.list(result.toQuery(), defaultParams);
         }
 
         if (result instanceof SelectQueryBuilder) {
-          return Endpoint.defaultHandler.list(result, isListWithCount, defaultParams);
+          return Endpoint.defaultHandler.list(result, defaultParams);
         }
 
         const { query, ...payload } = result;
 
         if (query instanceof TypeormJsonQuery) {
           return {
-            ...(await Endpoint.defaultHandler.list(
-              query.toQuery(),
-              isListWithCount,
-              defaultParams,
-            )),
+            ...(await Endpoint.defaultHandler.list(query.toQuery(), defaultParams)),
             ...payload,
           };
         }
 
         if (query instanceof SelectQueryBuilder) {
           return {
-            ...(await Endpoint.defaultHandler.list(query, isListWithCount, defaultParams)),
+            ...(await Endpoint.defaultHandler.list(query, defaultParams)),
             ...payload,
           };
         }
@@ -1247,7 +1252,10 @@ class Endpoint {
       TPayload,
       ICreateLazyResult<TEntity, TResult>
     > = (params, options) => {
-      const { repository, isAllowMultiple, shouldResetCache } = createOptions();
+      const { repository, isAllowMultiple, shouldResetCache } = {
+        ...createOptions(),
+        ...(params.payload?.authorization?.filter?.methodOptions ?? {}),
+      };
       const { fields } = params ?? {};
 
       if (handler) {
@@ -1278,7 +1286,10 @@ class Endpoint {
       TPayload,
       UpdateOutputParams<TEntity> | TResult
     > = async function (params, options) {
-      const { repository, queryOptions, shouldResetCache } = updateOptions();
+      const { repository, queryOptions, shouldResetCache } = {
+        ...updateOptions(),
+        ...(params.payload?.authorization?.filter?.methodOptions ?? {}),
+      };
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
         ...queryOptions,
         isDisableRelations: true,
@@ -1376,11 +1387,11 @@ class Endpoint {
       const {
         repository,
         queryOptions,
-        isAllowMultiple = true,
-        isSoftDelete = false,
-        shouldReturnEntity = false,
-        shouldResetCache = false,
-      } = removeOptions();
+        isAllowMultiple,
+        isSoftDelete,
+        shouldReturnEntity,
+        shouldResetCache,
+      } = { ...removeOptions(), ...(params.payload?.authorization?.filter?.methodOptions ?? {}) };
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
         ...queryOptions,
         isDisableRelations: true,
@@ -1389,23 +1400,19 @@ class Endpoint {
         isDisablePagination: true,
       });
       const result = await handler(typeQuery, params, options);
+      const defaultParams = {
+        isAllowMultiple,
+        isSoftDelete,
+        shouldReturnEntity,
+        shouldResetCache,
+      };
 
       if (result instanceof TypeormJsonQuery) {
-        return Endpoint.defaultHandler.remove(repository, result.toQuery(), {
-          isAllowMultiple,
-          isSoftDelete,
-          shouldReturnEntity,
-          shouldResetCache,
-        });
+        return Endpoint.defaultHandler.remove(repository, result.toQuery(), defaultParams);
       }
 
       if (result instanceof SelectQueryBuilder) {
-        return Endpoint.defaultHandler.remove(repository, result, {
-          isAllowMultiple,
-          isSoftDelete,
-          shouldReturnEntity,
-          shouldResetCache,
-        });
+        return Endpoint.defaultHandler.remove(repository, result, defaultParams);
       }
 
       return result;
@@ -1438,12 +1445,10 @@ class Endpoint {
       TPayload,
       RestoreOutputParams<TEntity> | TResult
     > = async function (params, options) {
-      const {
-        repository,
-        isAllowMultiple = true,
-        queryOptions,
-        shouldResetCache,
-      } = restoreOptions();
+      const { repository, isAllowMultiple, queryOptions, shouldResetCache } = {
+        ...restoreOptions(),
+        ...(params.payload?.authorization?.filter?.methodOptions ?? {}),
+      };
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
         ...queryOptions,
         isDisableRelations: true,

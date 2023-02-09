@@ -166,10 +166,10 @@ describe('services/endpoint', () => {
       }));
 
       const result = await listWithDefaultHandler({ hasRemoved: true }, endpointOptions);
-      const [queryBuilder, isListWithCount, params] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
-      expect(isListWithCount).to.be.false;
+      expect(params?.isWithCount).to.be.false;
       expect(params?.hasRemoved).to.be.ok;
       expect(result).to.deep.equal(listResult());
     });
@@ -181,7 +181,7 @@ describe('services/endpoint', () => {
       }));
 
       const result = await listWithDefaultHandler({}, endpointOptions);
-      const [queryBuilder, , params] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder, params] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
       expect(params?.isParallel).to.be.ok;
@@ -193,12 +193,9 @@ describe('services/endpoint', () => {
       handler.callsFake((query) => query.toQuery());
 
       const result = await listHandler({}, endpointOptions);
-      const [queryBuilder, isListWithCount, params] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
-      expect(isListWithCount).to.be.ok;
-      expect(params?.hasRemoved).to.be.undefined;
-      expect(params?.isParallel).to.be.undefined;
       expect(result).to.deep.equal(listResult());
     });
 
@@ -207,12 +204,9 @@ describe('services/endpoint', () => {
       handler.callsFake((query) => ({ query, payloadParam: 1 }));
 
       const result = await listHandler({}, endpointOptions);
-      const [queryBuilder, isListWithCount, params] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
-      expect(isListWithCount).to.be.ok;
-      expect(params?.hasRemoved).to.be.undefined;
-      expect(params?.isParallel).to.be.undefined;
       expect(result).to.deep.equal({ ...listResult(), payloadParam: 1 });
     });
 
@@ -221,12 +215,9 @@ describe('services/endpoint', () => {
       handler.callsFake((query) => ({ query: query.toQuery(), payloadParam: 1 }));
 
       const result = await listHandler({}, endpointOptions);
-      const [queryBuilder, isListWithCount, params] = defaultHandlerStub.firstCall.args;
+      const [queryBuilder] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
-      expect(isListWithCount).to.be.ok;
-      expect(params?.hasRemoved).to.be.undefined;
-      expect(params?.isParallel).to.be.undefined;
       expect(result).to.deep.equal({ ...listResult(), payloadParam: 1 });
     });
 
@@ -242,7 +233,9 @@ describe('services/endpoint', () => {
     it('handler - should return list entities without removed & without count: default handler', async () => {
       defaultHandlerStub.restore();
 
-      const result = await Endpoint.defaultHandler.list(repository.createQueryBuilder(), false);
+      const result = await Endpoint.defaultHandler.list(repository.createQueryBuilder(), {
+        isWithCount: false,
+      });
 
       expect(TypeormMock.queryBuilder.getMany).to.be.calledOnce;
       expect(result).to.deep.equal({ list: [] });
@@ -252,7 +245,7 @@ describe('services/endpoint', () => {
       const qb = repository.createQueryBuilder();
       const withDeletedSpy = sandbox.spy(qb, 'withDeleted');
 
-      const result = await Endpoint.defaultHandler.list(qb, true, { hasRemoved: true });
+      const result = await Endpoint.defaultHandler.list(qb, { hasRemoved: true });
 
       expect(withDeletedSpy).to.be.calledOnce;
       expect(TypeormMock.queryBuilder.getManyAndCount).to.be.calledOnce;
@@ -261,7 +254,7 @@ describe('services/endpoint', () => {
 
     it('handler - should return list entities cached: default handler', async () => {
       const qb = repository.createQueryBuilder();
-      const result = await Endpoint.defaultHandler.list(qb, true, { cache: { listCache: 150 } });
+      const result = await Endpoint.defaultHandler.list(qb, { cache: { listCache: 150 } });
 
       expect(TypeormMock.queryBuilder.getManyAndCount).to.be.calledOnce;
       expect(qb.expressionMap.cache).to.be.ok;
@@ -755,12 +748,10 @@ describe('services/endpoint', () => {
       const removeHandler = Endpoint.remove?.(() => ({ repository }));
 
       const result = await removeHandler({ query: {} }, endpointOptions);
-      const [passedRepo, queryBuilder, passedOptions] = defaultHandlerStub.firstCall.args;
+      const [passedRepo, queryBuilder] = defaultHandlerStub.firstCall.args;
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
       expect(passedRepo).to.equal(repository);
-      expect(passedOptions.isSoftDelete).to.false;
-      expect(passedOptions.isAllowMultiple).to.ok;
       expect(result).to.deep.equal(removeResult());
     });
 
@@ -779,8 +770,8 @@ describe('services/endpoint', () => {
 
       expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
       expect(passedRepo).to.equal(repository);
-      expect(passedOptions.isSoftDelete).to.ok;
-      expect(passedOptions.isAllowMultiple).to.false;
+      expect(passedOptions?.isSoftDelete).to.ok;
+      expect(passedOptions?.isAllowMultiple).to.false;
       expect(result).to.deep.equal(removeResult());
     });
 
