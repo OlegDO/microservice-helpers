@@ -1098,6 +1098,7 @@ class Endpoint {
         const { repository, queryOptions, cache } = countOptions();
         const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
           ...queryOptions,
+          relationOptions: ['*'],
           isDisableOrderBy: true,
           isDisableAttributes: true,
         });
@@ -1292,7 +1293,7 @@ class Endpoint {
       };
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
         ...queryOptions,
-        isDisableRelations: true,
+        relationOptions: ['*'],
         isDisableOrderBy: true,
         isDisablePagination: true,
         isDisableAttributes: true,
@@ -1394,7 +1395,7 @@ class Endpoint {
       } = { ...removeOptions(), ...(params.payload?.authorization?.filter?.methodOptions ?? {}) };
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
         ...queryOptions,
-        isDisableRelations: true,
+        relationOptions: ['*'],
         isDisableOrderBy: true,
         isDisableAttributes: true,
         isDisablePagination: true,
@@ -1451,7 +1452,7 @@ class Endpoint {
       };
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
         ...queryOptions,
-        isDisableRelations: true,
+        relationOptions: ['*'],
         isDisableOrderBy: true,
         isDisableAttributes: true,
         isDisablePagination: true,
