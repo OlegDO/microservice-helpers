@@ -12,6 +12,7 @@ import {
 } from '@lomray/microservice-remote-middleware';
 import type { ConnectionOptions } from 'typeorm';
 import CreateDbConnection from '@helpers/create-db-connection';
+import Jobs from '@services/jobs';
 import Log from '@services/log';
 import type { ILokiTransportOptions } from '@services/log';
 import RemoteConfig from '@services/remote-config';
@@ -27,6 +28,7 @@ export interface IStartConfig {
   msParams: Partial<IGatewayParams> | IMicroserviceParams;
   registerMethods?: (ms: Microservice | Gateway) => Promise<void> | void;
   registerEvents?: (ms: Microservice | Gateway) => Promise<void> | void;
+  registerJobs?: (jobService: Jobs) => Promise<void> | void;
   remoteMiddleware?: TRemoteMiddleware;
   remoteConfig?: { isDisable?: boolean; msConfigName?: string };
   logGrafana?: ILokiTransportOptions | boolean;
@@ -54,6 +56,7 @@ const start = async ({
   msParams,
   registerMethods,
   registerEvents,
+  registerJobs,
   remoteMiddleware,
   remoteConfig,
   logGrafana,
@@ -80,8 +83,9 @@ const start = async ({
     await beforeCreateMicroservice?.();
 
     const microservice = (type === 'gateway' ? Gateway : Microservice).create(msOptions, msParams);
+    const jobsService = Jobs.init(microservice);
 
-    // Enable remote config (enabled by default)
+    // Enable remote config
     RemoteConfig.init(microservice, {
       msName: msOptions.name as string,
       msConfigName: remoteConfig?.msConfigName || 'configuration',
@@ -105,6 +109,7 @@ const start = async ({
     await afterCreateMicroservice?.(microservice);
     await registerMethods?.(microservice);
     await registerEvents?.(microservice);
+    await registerJobs?.(jobsService);
 
     // Enable remote middleware (enabled by default)
     if (remoteMiddleware?.isEnable ?? true) {

@@ -14,6 +14,7 @@ import type {
   run as OriginalRun,
 } from '@helpers/launchers';
 import { TypeormMock } from '@mocks/index';
+import Jobs from '@services/jobs';
 import Log from '@services/log';
 import RemoteConfig from '@services/remote-config';
 import waitResult from '@test-helpers/wait-result';
@@ -46,6 +47,7 @@ describe('helpers/launchers', () => {
     const spyCreate = sandbox.spy(Microservice, 'create');
     const registerMethodsStub = sandbox.stub();
     const registerEventsStub = sandbox.stub();
+    const registerJobsStub = sandbox.stub();
     const beforeStartStub = sandbox.stub();
     const beforeCreateMicroserviceStub = sandbox.stub();
     const initRemoteMiddlewareStub = sandbox.stub();
@@ -82,6 +84,7 @@ describe('helpers/launchers', () => {
       },
       registerMethods: registerMethodsStub,
       registerEvents: registerEventsStub,
+      registerJobs: registerJobsStub,
     });
 
     const [createOptions, createParams] = spyCreate.firstCall.args;
@@ -102,6 +105,7 @@ describe('helpers/launchers', () => {
     });
     expect(registerMethodsStub).to.calledOnceWith(Microservice.getInstance());
     expect(registerEventsStub).to.calledOnceWith(Microservice.getInstance());
+    expect(registerJobsStub).to.calledOnceWith(Jobs.get());
   });
 
   it('should correctly start gateway', async () => {
