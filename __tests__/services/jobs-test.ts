@@ -10,7 +10,7 @@ describe('services/jobs', () => {
   const name = 'test-name';
   const callback = () => ({ success: true });
   const fakeJob = { job: 1 };
-  const getJobPath = (path = name) => [path, 'job'].join('.');
+  const getJobPath = (path = name) => ['job', path].join('.');
 
   afterEach(() => {
     sandbox.restore();

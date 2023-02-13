@@ -50,6 +50,14 @@ class Jobs {
   }
 
   /**
+   * Get job endpoint name
+   * @private
+   */
+  private getEndpoint(path: string): string {
+    return ['job', path].join('.');
+  }
+
+  /**
    * Add new job
    */
   public addJobEndpoint<TParams = Record<string, any>, TPayload = Record<string, any>>(
@@ -57,7 +65,7 @@ class Jobs {
     handler: IEndpointHandler<TParams, TPayload>,
     options: Partial<IEndpointHandlerOptions> = {},
   ): void {
-    const method = [path, 'job'].join('.');
+    const method = this.getEndpoint(path);
 
     if (this.hasJob(method)) {
       Log.warn(`Job with name ${method} already exist. It will be replaced.`);
@@ -70,7 +78,7 @@ class Jobs {
    * Remove job endpoint
    */
   public removeJobEndpoint(path: string): void {
-    this.ms.removeEndpoint([path, 'job'].join('.'));
+    this.ms.removeEndpoint(this.getEndpoint(path));
   }
 
   /**
@@ -79,7 +87,7 @@ class Jobs {
   public getJobs(): IEndpoints {
     return Object.entries(this.ms.getEndpoints()).reduce(
       (res, [method, params]) => ({
-        ...(method.endsWith('.job') ? { [method]: params } : {}),
+        ...(method.includes('job.') ? { [method]: params } : {}),
         ...res,
       }),
       {},
@@ -92,7 +100,7 @@ class Jobs {
   public hasJob(path: string): boolean {
     return (
       this.ms.getEndpoints()[path] !== undefined ||
-      this.ms.getEndpoints()[[path, 'job'].join('.')] !== undefined
+      this.ms.getEndpoints()[this.getEndpoint(path)] !== undefined
     );
   }
 }
