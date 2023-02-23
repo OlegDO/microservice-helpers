@@ -8,6 +8,12 @@ export interface IApiParams {
   endpoints: Endpoints<Endpoints, ApiClientBackend>;
 }
 
+type PropTypeIfExist<T extends { endpoints: any }> = T extends {
+  extendEndpoints: infer CustomEndpoints;
+}
+  ? CustomEndpoints
+  : T['endpoints'];
+
 /**
  * Service for make requests to another microservices
  * This service can generate automatically (in future)
@@ -16,12 +22,12 @@ class Api {
   /**
    * @private
    */
-  private static instance: IApiParams['endpoints'] | null = null;
+  private static instance: PropTypeIfExist<IApiParams> | null = null;
 
   /**
    * Get api client
    */
-  static get(): IApiParams['endpoints'] {
+  static get(): PropTypeIfExist<IApiParams> {
     if (Api.instance === null) {
       Api.init();
     }
@@ -34,7 +40,7 @@ class Api {
    */
   static init(
     ms?: AbstractMicroservice,
-    endpoints: ClassReturn<IApiParams['endpoints']> = Endpoints,
+    endpoints: ClassReturn<PropTypeIfExist<IApiParams>> = Endpoints,
   ): void {
     if (Api.instance !== null) {
       return;

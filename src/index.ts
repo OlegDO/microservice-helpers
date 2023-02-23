@@ -48,6 +48,8 @@ export { default as RemoteConfig } from '@services/remote-config';
 
 export { default as Api } from '@services/api';
 
+export type { IApiParams } from '@services/api';
+
 export * from '@entities/ijson-query-filter';
 
 export { default as MetaEndpoint } from '@methods/meta';

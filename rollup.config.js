@@ -36,6 +36,8 @@ export default {
     '@lomray/microservice-nodejs-lib',
     '@lomray/microservice-remote-middleware',
     '@lomray/microservices-types',
+    '@lomray/microservices-client-api/api-client-backend',
+    '@lomray/microservices-client-api/endpoints',
     'class-validator-jsonschema',
     '@lomray/typeorm-json-query',
     'typeorm/query-builder/SelectQueryBuilder',
