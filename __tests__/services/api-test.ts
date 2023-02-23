@@ -14,13 +14,12 @@ describe('services/api', () => {
 
   it('should correctly set microservice instance', () => {
     Api.init(ms);
+    Api.init();
 
-    expect(Api).property('ms').to.equal(ms);
+    expect(Api).property('instance').to.instanceof(Endpoints);
   });
 
   it('should correctly init client', () => {
-    const client = Api.get();
-
-    expect(client).to.instanceof(Endpoints);
+    expect(Api.get()).to.instanceof(Endpoints);
   });
 });

@@ -2,7 +2,14 @@ import { AbstractMicroservice, Microservice } from '@lomray/microservice-nodejs-
 import ApiClientBackend from '@lomray/microservices-client-api/api-client-backend';
 import Endpoints from '@lomray/microservices-client-api/endpoints';
 
-type TEndpoints = Endpoints<Endpoints, ApiClientBackend>;
+export interface IApiParams {
+  endpoints: Endpoints<Endpoints, ApiClientBackend>;
+}
+
+/**
+ * Convert class type to class constructor
+ */
+export type ClassReturnType<T> = new (...args: any) => T;
 
 /**
  * Service for make requests to another microservices
@@ -12,31 +19,33 @@ class Api {
   /**
    * @private
    */
-  private static instance: TEndpoints | null = null;
-
-  /**
-   * @private
-   */
-  private static ms: AbstractMicroservice;
+  private static instance: IApiParams['endpoints'] | null = null;
 
   /**
    * Get api client
    */
-  static get(): TEndpoints {
+  static get(): IApiParams['endpoints'] {
     if (Api.instance === null) {
-      const apiClient = new ApiClientBackend(Api.ms || Microservice.getInstance());
-
-      Api.instance = new Endpoints(apiClient);
+      Api.init();
     }
 
-    return Api.instance;
+    return Api.instance!;
   }
 
   /**
    * Init client
    */
-  static init(ms: AbstractMicroservice): void {
-    Api.ms = ms;
+  static init(
+    ms?: AbstractMicroservice,
+    endpoints: ClassReturnType<IApiParams['endpoints']> = Endpoints,
+  ): void {
+    if (Api.instance !== null) {
+      return;
+    }
+
+    const apiClient = new ApiClientBackend(ms || Microservice.getInstance());
+
+    Api.instance = new endpoints(apiClient);
   }
 }
 
