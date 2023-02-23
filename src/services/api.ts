@@ -1,15 +1,12 @@
-import { AbstractMicroservice, Microservice } from '@lomray/microservice-nodejs-lib';
+import type { ClassReturn } from '@lomray/client-helpers/interfaces/class-return';
+import { Microservice } from '@lomray/microservice-nodejs-lib';
+import type { AbstractMicroservice } from '@lomray/microservice-nodejs-lib';
 import ApiClientBackend from '@lomray/microservices-client-api/api-client-backend';
 import Endpoints from '@lomray/microservices-client-api/endpoints';
 
 export interface IApiParams {
   endpoints: Endpoints<Endpoints, ApiClientBackend>;
 }
-
-/**
- * Convert class type to class constructor
- */
-export type ClassReturnType<T> = new (...args: any) => T;
 
 /**
  * Service for make requests to another microservices
@@ -37,7 +34,7 @@ class Api {
    */
   static init(
     ms?: AbstractMicroservice,
-    endpoints: ClassReturnType<IApiParams['endpoints']> = Endpoints,
+    endpoints: ClassReturn<IApiParams['endpoints']> = Endpoints,
   ): void {
     if (Api.instance !== null) {
       return;
