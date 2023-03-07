@@ -4,7 +4,7 @@ import type {
   IMicroserviceOptions,
   IMicroserviceParams,
 } from '@lomray/microservice-nodejs-lib';
-import { Gateway, Microservice } from '@lomray/microservice-nodejs-lib';
+import { Gateway, Microservice, Socket } from '@lomray/microservice-nodejs-lib';
 import type { IMiddlewareRepository } from '@lomray/microservice-remote-middleware';
 import {
   RemoteMiddlewareClient,
@@ -23,11 +23,11 @@ type TRemoteMiddleware = { isEnable?: boolean } & (
 );
 
 export interface IStartConfig {
-  type: 'gateway' | 'microservice';
+  type: 'gateway' | 'microservice' | 'socket';
   msOptions: Partial<IGatewayOptions | IMicroserviceOptions>;
   msParams: Partial<IGatewayParams> | IMicroserviceParams;
-  registerMethods?: (ms: Microservice | Gateway) => Promise<void> | void;
-  registerEvents?: (ms: Microservice | Gateway) => Promise<void> | void;
+  registerMethods?: (ms: Microservice | Gateway | Socket) => Promise<void> | void;
+  registerEvents?: (ms: Microservice | Gateway | Socket) => Promise<void> | void;
   registerJobs?: (jobService: Jobs) => Promise<void> | void;
   remoteMiddleware?: TRemoteMiddleware;
   remoteConfig?: { isDisable?: boolean; msConfigName?: string };
@@ -35,7 +35,7 @@ export interface IStartConfig {
   logConsoleLevel?: string;
   hooks?: {
     beforeCreateMicroservice?: () => Promise<void> | void;
-    afterCreateMicroservice?: (ms: Microservice | Gateway) => Promise<void> | void;
+    afterCreateMicroservice?: (ms: Microservice | Gateway | Socket) => Promise<void> | void;
     afterInitRemoteMiddleware?: () => Promise<void> | void;
     beforeStart?: () => Promise<void> | void;
   };
@@ -45,6 +45,10 @@ export interface IStartConfigWithDb extends IStartConfig {
   dbOptions: ConnectionOptions;
   shouldUseDbRemoteOptions?: boolean;
 }
+
+export type IStartConfigSocket = {
+  registerRooms?: (ms: Socket) => Promise<void> | void;
+} & (IStartConfig | IStartConfigWithDb);
 
 /**
  * 1. Initialize
@@ -82,8 +86,9 @@ const start = async ({
 
     await beforeCreateMicroservice?.();
 
-    const microservice = (type === 'gateway' ? Gateway : Microservice).create(msOptions, msParams);
-    const jobsService = Jobs.init(microservice);
+    const microservice = (
+      type === 'gateway' ? Gateway : type === 'socket' ? Socket : Microservice
+    ).create(msOptions, msParams);
 
     // Enable remote config
     RemoteConfig.init(microservice, {
@@ -109,7 +114,7 @@ const start = async ({
     await afterCreateMicroservice?.(microservice);
     await registerMethods?.(microservice);
     await registerEvents?.(microservice);
-    await registerJobs?.(jobsService);
+    await registerJobs?.(Jobs.init(microservice));
 
     // Enable remote middleware (enabled by default)
     if (remoteMiddleware?.isEnable ?? true) {
@@ -147,30 +152,52 @@ const start = async ({
 };
 
 /**
- * 1. Initialize
- * 2. Create db connection
- * 3. Start microservice
+ * Return start config with DB initialization
  */
-const startWithDb = ({
+const withDbConfig = ({
   dbOptions,
   shouldUseDbRemoteOptions = true,
   ...config
-}: IStartConfigWithDb): Promise<void> =>
-  start({
-    ...config,
-    hooks: {
-      ...(config.hooks ?? {}),
-      afterCreateMicroservice: async (...hookParams) => {
-        await CreateDbConnection(dbOptions, shouldUseDbRemoteOptions);
-        await config?.hooks?.afterCreateMicroservice?.(...hookParams);
-      },
+}: IStartConfigWithDb): IStartConfig => ({
+  ...config,
+  hooks: {
+    ...(config.hooks ?? {}),
+    afterCreateMicroservice: async (...hookParams) => {
+      await CreateDbConnection(dbOptions, shouldUseDbRemoteOptions);
+      await config?.hooks?.afterCreateMicroservice?.(...hookParams);
     },
-  });
+  },
+});
+
+/**
+ * Return start config with register socket rooms
+ */
+const withSocketConfig = ({ registerRooms, ...config }: IStartConfigSocket): IStartConfig => ({
+  ...config,
+  hooks: {
+    ...(config.hooks ?? {}),
+    afterCreateMicroservice: async (...hookParams) => {
+      await registerRooms?.(hookParams[0] as Socket);
+      await config?.hooks?.afterCreateMicroservice?.(...hookParams);
+    },
+  },
+});
 
 /**
  * Choose launcher depends on params and run microservice
  */
-const run = (params: IStartConfig | IStartConfigWithDb): Promise<void> =>
-  'dbOptions' in params ? startWithDb(params) : start(params);
+const run = (params: IStartConfig | IStartConfigWithDb | IStartConfigSocket): Promise<void> => {
+  let config = params;
 
-export { start, startWithDb, run };
+  if (params.type === 'socket') {
+    config = withSocketConfig(config);
+  }
+
+  if ('dbOptions' in config) {
+    config = withDbConfig(config);
+  }
+
+  return start(config);
+};
+
+export { withDbConfig, withSocketConfig, start, run };

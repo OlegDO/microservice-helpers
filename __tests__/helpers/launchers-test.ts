@@ -1,4 +1,4 @@
-import { Gateway, Microservice } from '@lomray/microservice-nodejs-lib';
+import { Gateway, Microservice, Socket } from '@lomray/microservice-nodejs-lib';
 import type { IMiddlewareRepository } from '@lomray/microservice-remote-middleware';
 import {
   RemoteMiddlewareClient,
@@ -8,11 +8,7 @@ import { expect } from 'chai';
 import rewiremock from 'rewiremock';
 import sinon from 'sinon';
 import type { ConnectionOptions } from 'typeorm';
-import type {
-  start as OriginalStart,
-  startWithDb as OriginalStartWithDb,
-  run as OriginalRun,
-} from '@helpers/launchers';
+import type { start as OriginalStart, run as OriginalRun } from '@helpers/launchers';
 import { TypeormMock } from '@mocks/index';
 import Jobs from '@services/jobs';
 import Log from '@services/log';
@@ -20,8 +16,7 @@ import RemoteConfig from '@services/remote-config';
 import waitResult from '@test-helpers/wait-result';
 
 const CreateDbConnection = sinon.stub().resolves();
-const { start, startWithDb, run } = rewiremock.proxy<{
-  startWithDb: typeof OriginalStartWithDb;
+const { start, run } = rewiremock.proxy<{
   start: typeof OriginalStart;
   run: typeof OriginalRun;
 }>(() => require('@helpers/launchers'), {
@@ -69,7 +64,7 @@ describe('helpers/launchers', () => {
         return rmMiddleware;
       });
 
-    await startWithDb({
+    await run({
       type: 'microservice',
       msOptions,
       msParams,
@@ -246,5 +241,29 @@ describe('helpers/launchers', () => {
     });
 
     expect(CreateDbConnection).to.calledOnce;
+  });
+
+  it('should correctly run microservice with socket', async () => {
+    const spyCreate = sandbox.spy(Socket, 'create');
+    const registerRoomsStub = sandbox.stub();
+    let stubbedStart;
+
+    await run({
+      type: 'socket',
+      msOptions,
+      msParams,
+      registerRooms: registerRoomsStub,
+      remoteMiddleware: { isEnable: false, type: 'client' },
+      remoteConfig: { isDisable: true },
+      hooks: {
+        afterCreateMicroservice: (microservice) => {
+          stubbedStart = sandbox.stub(microservice, 'start').resolves();
+        },
+      },
+    });
+
+    expect(stubbedStart).to.calledOnce;
+    expect(spyCreate).to.calledOnce;
+    expect(registerRoomsStub).to.calledOnceWith(Socket.getInstance());
   });
 });

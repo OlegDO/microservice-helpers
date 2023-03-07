@@ -33,9 +33,9 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@lomray/microservice-nodejs-lib": "^2.19.0",
+    "@lomray/microservice-nodejs-lib": "^2.20.0",
     "@lomray/microservice-remote-middleware": "^1.7.6",
-    "@lomray/microservices-client-api": "^2.5.0",
+    "@lomray/microservices-client-api": "^2.7.3",
     "@lomray/microservices-types": "^1.9.1",
     "@lomray/typeorm-json-query": "^2.3.1",
     "@opentelemetry/api": "^1.4.0",
@@ -95,7 +95,7 @@
     "rollup-plugin-copy": "^3.4.0",
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "rollup-plugin-ts": "3.0.2",
-    "semantic-release": "^20.1.0",
+    "semantic-release": "^20.1.1",
     "sinon": "^15.0.1",
     "sinon-chai": "^3.7.0",
     "ts-node": "10.9.1",
