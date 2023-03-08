@@ -4,21 +4,21 @@ import _ from 'lodash';
 import type { ICommonConstants } from '@helpers/get-constants';
 import GetDbConfig from '@helpers/get-db-config';
 import { GetMsOptions, GetMsParams } from '@helpers/get-ms-config';
-import type { IStartConfig, IStartConfigWithDb } from '@helpers/launchers';
+import type { IStartConfig, IStartConfigWithDb, IStartConfigSocket } from '@helpers/launchers';
 
 export type TOverloadMsStartConfigParams<T extends Record<string, any>> = T['DB'] extends Record<
   string,
   any
 >
-  ? PartialProps<IStartConfigWithDb, 'msOptions' | 'msParams' | 'dbOptions'>
-  : PartialProps<IStartConfig, 'msOptions' | 'msParams'>;
+  ? PartialProps<IStartConfigSocket<IStartConfigWithDb>, 'msOptions' | 'msParams' | 'dbOptions'>
+  : PartialProps<IStartConfigSocket<IStartConfig>, 'msOptions' | 'msParams'>;
 
 export type TOverloadMsStartConfigReturn<T extends Record<string, any>> = T['DB'] extends Record<
   string,
   any
 >
-  ? IStartConfigWithDb
-  : IStartConfig;
+  ? IStartConfigSocket<IStartConfigWithDb>
+  : IStartConfigSocket<IStartConfig>;
 
 /**
  * Get default microservice start config

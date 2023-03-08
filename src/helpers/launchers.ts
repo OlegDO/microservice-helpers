@@ -3,6 +3,8 @@ import type {
   IGatewayParams,
   IMicroserviceOptions,
   IMicroserviceParams,
+  ISocketOptions,
+  ISocketParams,
 } from '@lomray/microservice-nodejs-lib';
 import { Gateway, Microservice, Socket } from '@lomray/microservice-nodejs-lib';
 import type { IMiddlewareRepository } from '@lomray/microservice-remote-middleware';
@@ -24,8 +26,8 @@ type TRemoteMiddleware = { isEnable?: boolean } & (
 
 export interface IStartConfig {
   type: 'gateway' | 'microservice' | 'socket';
-  msOptions: Partial<IGatewayOptions | IMicroserviceOptions>;
-  msParams: Partial<IGatewayParams> | IMicroserviceParams;
+  msOptions: Partial<IGatewayOptions | IMicroserviceOptions | ISocketOptions>;
+  msParams: Partial<IGatewayParams | IMicroserviceParams | ISocketParams>;
   registerMethods?: (ms: Microservice | Gateway | Socket) => Promise<void> | void;
   registerEvents?: (ms: Microservice | Gateway | Socket) => Promise<void> | void;
   registerJobs?: (jobService: Jobs) => Promise<void> | void;
@@ -46,9 +48,9 @@ export interface IStartConfigWithDb extends IStartConfig {
   shouldUseDbRemoteOptions?: boolean;
 }
 
-export type IStartConfigSocket = {
+export type IStartConfigSocket<T = IStartConfig | IStartConfigWithDb> = {
   registerRooms?: (ms: Socket) => Promise<void> | void;
-} & (IStartConfig | IStartConfigWithDb);
+} & T;
 
 /**
  * 1. Initialize
