@@ -658,7 +658,7 @@ const createDefaultHandler = async <TEntity, TResult = never>({
   }
 
   const entities: (TEntity & Partial<TEntity>)[] = entitiesAttributes.map((attributes) =>
-    plainToInstance(repository.target as Constructable<TEntity>, attributes),
+    plainToInstance(repository.target as Constructable<TEntity>, attributes ?? {}),
   );
   const errors = await Promise.all(
     entities.map((entity) =>
@@ -1501,7 +1501,7 @@ class Endpoint {
 
       if (typeof input === 'function') {
         const errors = await validate(
-          plainToInstance(input as Constructable<Record<string, any>>, params),
+          plainToInstance(input as Constructable<Record<string, any>>, params ?? {}),
           {
             whitelist: true,
             validationError: { target: false },
@@ -1539,7 +1539,7 @@ class Endpoint {
 
       if (typeof input === 'function') {
         const errors = await validate(
-          plainToInstance(input as Constructable<Record<string, any>>, params),
+          plainToInstance(input as Constructable<Record<string, any>>, params ?? {}),
           {
             whitelist: true,
             validationError: { target: false },
