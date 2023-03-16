@@ -1103,10 +1103,10 @@ class Endpoint {
       async function (params, options) {
         const { repository, queryOptions, cache } = countOptions();
         const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
-          ...queryOptions,
           relationOptions: ['*'],
           isDisableOrderBy: true,
           isDisableAttributes: true,
+          ...queryOptions,
         });
         const result = await handler(typeQuery, params, options);
         const { hasRemoved } = params;
@@ -1215,9 +1215,9 @@ class Endpoint {
       async function (params, options) {
         const { repository, queryOptions, cache } = viewOptions();
         const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
-          ...queryOptions,
           isDisableOrderBy: true,
           isDisablePagination: true,
+          ...queryOptions,
         });
         const result = await handler(typeQuery, params, options);
 
@@ -1298,11 +1298,11 @@ class Endpoint {
         ...(params.payload?.authorization?.filter?.methodOptions ?? {}),
       };
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
-        ...queryOptions,
         relationOptions: ['*'],
         isDisableOrderBy: true,
         isDisablePagination: true,
         isDisableAttributes: true,
+        ...queryOptions,
       });
       const primaryKeys = new Set(
         repository.metadata.primaryColumns.map(({ propertyName }) => propertyName),
@@ -1400,11 +1400,11 @@ class Endpoint {
         shouldResetCache,
       } = { ...removeOptions(), ...(params.payload?.authorization?.filter?.methodOptions ?? {}) };
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
-        ...queryOptions,
         relationOptions: ['*'],
         isDisableOrderBy: true,
         isDisableAttributes: true,
         isDisablePagination: true,
+        ...queryOptions,
       });
       const result = await handler(typeQuery, params, options);
       const defaultParams = {
@@ -1457,11 +1457,11 @@ class Endpoint {
         ...(params.payload?.authorization?.filter?.methodOptions ?? {}),
       };
       const typeQuery = createTypeQuery(repository.createQueryBuilder(), params, {
-        ...queryOptions,
         relationOptions: ['*'],
         isDisableOrderBy: true,
         isDisableAttributes: true,
         isDisablePagination: true,
+        ...queryOptions,
       });
       const result = await handler(typeQuery, params, options);
       const defaultParams = { isAllowMultiple, shouldResetCache };
