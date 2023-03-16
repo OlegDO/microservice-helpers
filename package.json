@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@lomray/microservice-nodejs-lib": "^2.20.4",
-    "@lomray/microservice-remote-middleware": "^1.7.6",
+    "@lomray/microservice-remote-middleware": "^1.8.0",
     "@lomray/microservices-client-api": "^2.9.0",
     "@lomray/microservices-types": "^1.9.1",
     "@lomray/typeorm-json-query": "^2.4.0",
