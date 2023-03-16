@@ -19,6 +19,6 @@ describe('helpers/entity-columns', () => {
   it('should return entity columns', () => {
     const columns = EntityColumns(repository);
 
-    expect(columns).to.deep.equal(['id', 'param']);
+    expect(columns).to.deep.equal(['id', 'param', 'param2']);
   });
 });

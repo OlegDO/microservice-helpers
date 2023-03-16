@@ -665,6 +665,8 @@ const createDefaultHandler = async <TEntity, TResult = never>({
       validate(entity, {
         whitelist: true,
         forbidNonWhitelisted: true,
+        groups: ['create', repository.metadata.name],
+        always: true,
         validationError: { target: false },
       }),
     ),
@@ -779,6 +781,8 @@ const updateDefaultHandler = async <TEntity>(
   const errors = await validate(result, {
     whitelist: true,
     forbidNonWhitelisted: true,
+    groups: ['update', repository.metadata.name],
+    always: true,
     validationError: { target: false },
   });
 
@@ -1504,6 +1508,8 @@ class Endpoint {
           plainToInstance(input as Constructable<Record<string, any>>, params ?? {}),
           {
             whitelist: true,
+            groups: ['custom-with-query'],
+            always: true,
             validationError: { target: false },
           },
         );
@@ -1542,6 +1548,8 @@ class Endpoint {
           plainToInstance(input as Constructable<Record<string, any>>, params ?? {}),
           {
             whitelist: true,
+            groups: ['custom'],
+            always: true,
             validationError: { target: false },
           },
         );

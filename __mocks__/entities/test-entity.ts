@@ -19,6 +19,10 @@ class TestEntity {
   @Length(1, 50)
   param: string;
 
+  @Column()
+  @Length(1, 50, { groups: ['update'] })
+  param2?: string;
+
   @Type(() => NestedEntity)
   @IsObject()
   @ValidateNested()

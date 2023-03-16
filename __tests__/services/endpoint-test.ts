@@ -704,8 +704,9 @@ describe('services/endpoint', () => {
 
         expect(shouldNotCall).to.be.undefined;
       } catch (e) {
-        expect(e.payload.length).to.equal(1);
+        expect(e.payload.length).to.equal(2);
         expect(e.payload[0].property).to.equal('asd');
+        expect(e.payload[1].property).to.equal('param2');
       }
     });
 
@@ -715,7 +716,7 @@ describe('services/endpoint', () => {
       try {
         await Endpoint.defaultHandler.update(
           repository.createQueryBuilder().where('id = 1'),
-          { param: 'param', nested: { hello: '1' } },
+          { param: 'param', param2: 'param2', nested: { hello: '1' } },
           repository,
         );
 
@@ -732,7 +733,7 @@ describe('services/endpoint', () => {
 
       const result = Endpoint.defaultHandler.update(
         repository.createQueryBuilder().where('id = 1'),
-        { param: 'unknown' },
+        { param: 'unknown', param2: 'param2' },
         repository,
       );
 
@@ -744,13 +745,13 @@ describe('services/endpoint', () => {
 
       await Endpoint.defaultHandler.update(
         repository.createQueryBuilder().where('id = 1'),
-        { param: 'success' },
+        { param: 'success', param2: 'param2' },
         repository,
       );
 
       const [, updatedEntity] = TypeormMock.entityManager.save.firstCall.args;
 
-      expect(updatedEntity).to.deep.equal({ ...entity, param: 'success' });
+      expect(updatedEntity).to.deep.equal({ ...entity, param: 'success', param2: 'param2' });
     });
 
     it('should run default handler metadata: update', () => {
