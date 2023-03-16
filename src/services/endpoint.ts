@@ -4,7 +4,7 @@ import { BaseException } from '@lomray/microservice-nodejs-lib';
 import type { ObjectLiteral, IJsonQuery } from '@lomray/microservices-types';
 import type { ITypeormJsonQueryOptions } from '@lomray/typeorm-json-query';
 import TypeormJsonQuery from '@lomray/typeorm-json-query';
-import { Type } from 'class-transformer';
+import { Type, plainToInstance } from 'class-transformer';
 import { IsArray, IsBoolean, IsNumber, IsObject, validate } from 'class-validator';
 import { JSONSchema } from 'class-validator-jsonschema';
 import { DeleteResult } from 'typeorm';
@@ -658,7 +658,7 @@ const createDefaultHandler = async <TEntity, TResult = never>({
   }
 
   const entities: (TEntity & Partial<TEntity>)[] = entitiesAttributes.map((attributes) =>
-    Object.assign(repository.create(), attributes),
+    plainToInstance(repository.target as Constructable<TEntity>, attributes),
   );
   const errors = await Promise.all(
     entities.map((entity) =>
@@ -769,7 +769,13 @@ const updateDefaultHandler = async <TEntity>(
   }
 
   const { entity } = await viewDefaultHandler(query);
-  const result = Object.assign(entity, fields);
+  const result = plainToInstance(
+    (entity as ObjectLiteral).constructor as Constructable<Record<string, any>>,
+    {
+      ...entity,
+      ...fields,
+    },
+  );
   const errors = await validate(result, {
     whitelist: true,
     forbidNonWhitelisted: true,
@@ -1495,7 +1501,7 @@ class Endpoint {
 
       if (typeof input === 'function') {
         const errors = await validate(
-          Object.assign(new (input as Constructable)() as Record<string, any>, params),
+          plainToInstance(input as Constructable<Record<string, any>>, params),
           {
             whitelist: true,
             validationError: { target: false },
@@ -1533,7 +1539,7 @@ class Endpoint {
 
       if (typeof input === 'function') {
         const errors = await validate(
-          Object.assign(new (input as Constructable)() as Record<string, any>, params),
+          plainToInstance(input as Constructable<Record<string, any>>, params),
           {
             whitelist: true,
             validationError: { target: false },

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/unbound-method,sonarjs/no-duplicate-string */
 import TypeormJsonQuery from '@lomray/typeorm-json-query';
 import { expect } from 'chai';
 import sinon from 'sinon';
@@ -336,6 +336,25 @@ describe('services/endpoint', () => {
       } catch (e) {
         expect(e.payload.length).to.equal(1);
         expect(e.payload[0].property).to.equal('param');
+      }
+    });
+
+    it('handler - should throw error if nested entity not valid: validation failed', async () => {
+      try {
+        await Endpoint.defaultHandler.create({
+          fields: {
+            param: 'param',
+            nested: {
+              hello: '1',
+            },
+          },
+          repository,
+        });
+
+        expect(shouldNotCall).to.be.undefined;
+      } catch (e) {
+        expect(e.payload.length).to.equal(1);
+        expect(e.payload[0].property).to.equal('nested');
       }
     });
 
@@ -687,6 +706,23 @@ describe('services/endpoint', () => {
       } catch (e) {
         expect(e.payload.length).to.equal(1);
         expect(e.payload[0].property).to.equal('asd');
+      }
+    });
+
+    it('handler - should throw error: nested validation failed', async () => {
+      TypeormMock.queryBuilder.getMany.resolves([repository.create(entity)]);
+
+      try {
+        await Endpoint.defaultHandler.update(
+          repository.createQueryBuilder().where('id = 1'),
+          { param: 'param', nested: { hello: '1' } },
+          repository,
+        );
+
+        expect(shouldNotCall).to.be.undefined;
+      } catch (e) {
+        expect(e.payload.length).to.equal(1);
+        expect(e.payload[0].property).to.equal('nested');
       }
     });
 
@@ -1104,6 +1140,19 @@ describe('services/endpoint', () => {
 
     it('should throw error: invalid params', async () => {
       const params = { id: 1, param: '' };
+      const defaultHandler = sandbox.stub();
+      const customHandler = Endpoint.custom(
+        () => ({ output: {}, input: TestEntity }),
+        defaultHandler,
+      );
+
+      const result = customHandler(params, endpointOptions);
+
+      expect(await waitResult(result)).to.throw('Invalid request params');
+    });
+
+    it('should throw error: nested invalid params', async () => {
+      const params = { id: 1, param: 'param', nested: { hello: '1' } };
       const defaultHandler = sandbox.stub();
       const customHandler = Endpoint.custom(
         () => ({ output: {}, input: TestEntity }),

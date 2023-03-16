@@ -11,10 +11,14 @@ import RemoteConfig from '@services/remote-config';
  */
 export const mochaHooks = {
   beforeAll(): void {
-    sinon.stub(console, 'info');
     Log.configure({ silent: true });
     Log.transports.find((transport) => Log.remove(transport));
     RemoteConfig.init(Microservice.create(), { isOffline: true, msConfigName: '', msName: '' });
+  },
+  beforeEach(): void {
+    if (!console.info?.['resetHistory']) {
+      sinon.stub(console, 'info');
+    }
   },
   afterAll(): void {
     sinon.restore();

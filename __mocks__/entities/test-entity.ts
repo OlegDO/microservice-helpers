@@ -1,5 +1,13 @@
-import { Allow, Length } from 'class-validator';
+import { Type } from 'class-transformer';
+import { Allow, IsObject, Length, ValidateNested } from 'class-validator';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import IsUndefinable from '@validators/is-undefinable';
+
+class NestedEntity {
+  @Length(2, 5)
+  @IsUndefinable()
+  hello?: string;
+}
 
 @Entity()
 class TestEntity {
@@ -10,6 +18,12 @@ class TestEntity {
   @Column()
   @Length(1, 50)
   param: string;
+
+  @Type(() => NestedEntity)
+  @IsObject()
+  @ValidateNested()
+  @IsUndefinable()
+  nested?: NestedEntity;
 }
 
 export default TestEntity;
