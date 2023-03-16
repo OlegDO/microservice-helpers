@@ -769,8 +769,8 @@ const updateDefaultHandler = async <TEntity>(
   }
 
   const { entity } = await viewDefaultHandler(query);
-  const result = plainToInstance(
-    (entity as ObjectLiteral).constructor as Constructable<Record<string, any>>,
+  const result: TEntity & Partial<TEntity> = plainToInstance(
+    repository.target as Constructable<TEntity>,
     {
       ...entity,
       ...fields,
