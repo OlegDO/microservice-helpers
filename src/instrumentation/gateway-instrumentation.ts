@@ -26,7 +26,7 @@ import {
   Context,
   SpanStatusCode,
   HrTime,
-  MetricAttributes,
+  Attributes,
   ValueType,
 } from '@opentelemetry/api';
 import type { Histogram, SpanOptions } from '@opentelemetry/api';
@@ -149,7 +149,7 @@ class GatewayInstrumentation extends InstrumentationBase<typeof express> {
     span: Span,
     spanKind: SpanKind,
     startTime: HrTime,
-    metricAttributes: MetricAttributes,
+    metricAttributes: Attributes,
   ) {
     if (!this._spanNotEnded.has(span)) {
       return;

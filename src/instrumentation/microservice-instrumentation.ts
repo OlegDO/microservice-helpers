@@ -10,7 +10,7 @@ import {
   HrTime,
   Context,
   ROOT_CONTEXT,
-  MetricAttributes,
+  Attributes,
   ValueType,
 } from '@opentelemetry/api';
 import type { Histogram, SpanOptions } from '@opentelemetry/api';
@@ -180,7 +180,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           body: JSON.stringify(params || {}),
           type,
         };
-        let metricAttributes: MetricAttributes = {
+        let metricAttributes: Attributes = {
           [SemanticAttributes.HTTP_URL]: method,
           [SemanticAttributes.HTTP_CLIENT_IP]: clientIp,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
@@ -260,7 +260,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           body: JSON.stringify(data || {}),
           type,
         };
-        let metricAttributes: MetricAttributes = {
+        let metricAttributes: Attributes = {
           [SemanticAttributes.HTTP_URL]: method,
           [SemanticAttributes.HTTP_CLIENT_IP]: clientIp,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
@@ -332,7 +332,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           body: JSON.stringify(params || {}),
           type,
         };
-        let metricAttributes: MetricAttributes = {
+        let metricAttributes: Attributes = {
           [SemanticAttributes.HTTP_URL]: eventName,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
           type,
@@ -411,7 +411,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
           body: JSON.stringify(data || {}),
           type,
         };
-        let metricAttributes: MetricAttributes = {
+        let metricAttributes: Attributes = {
           [SemanticAttributes.HTTP_URL]: eventName,
           [SemanticAttributes.HTTP_METHOD]: attributes[SemanticAttributes.HTTP_METHOD],
           type,
@@ -475,7 +475,7 @@ class MicroserviceInstrumentation extends InstrumentationBase {
     span: Span,
     spanKind: SpanKind,
     startTime: HrTime,
-    metricAttributes: MetricAttributes,
+    metricAttributes: Attributes,
     error?: Error,
   ) {
     if (error) {
