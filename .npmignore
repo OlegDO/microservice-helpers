@@ -1,5 +1,6 @@
 __tests__
 __helpers__
+__mocks__
 lib/start.js
 lib/start.d.js
 src
@@ -8,6 +9,7 @@ coverage
 .github
 .husky
 .idea
+.run
 .nyc_output
 .gitattributes
 .editorconfig
@@ -24,3 +26,4 @@ sonar-project.properties
 scratch.http
 docker-compose.yml
 tsconfig.json
+release.config.js
