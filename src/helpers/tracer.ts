@@ -2,10 +2,10 @@ import { diag, DiagConsoleLogger, DiagLogLevel, metrics } from '@opentelemetry/a
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { HostMetrics } from '@opentelemetry/host-metrics';
+import { InstrumentationOption } from '@opentelemetry/instrumentation/build/src/types_internal';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
-import { InstrumentationOption } from '@opentelemetry/instrumentation/build/src/types_internal';
 import { Resource } from '@opentelemetry/resources';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import opentelemetry from '@opentelemetry/sdk-node';
@@ -112,7 +112,7 @@ const tracer = (constants: ITracerConfig): Promise<void> | void => {
     });
 
     try {
-      await sdk.start();
+      sdk.start();
 
       // init instrumentation metrics
       for (const inst of instrumentations) {
