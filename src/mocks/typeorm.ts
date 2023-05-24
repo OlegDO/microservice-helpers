@@ -189,6 +189,7 @@ const entityManager = new EntityManagerMock(fakeConnection) as EntityManagerMock
 };
 
 sandbox.stub(fakeConnection, 'manager').value(entityManager);
+sandbox.stub(fakeConnection, 'close');
 
 const stubs = {
   createConnection: sandbox.stub().resolves(fakeConnection),

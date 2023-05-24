@@ -1,3 +1,2 @@
-export { default as TypeormExtensionMock } from './typeorm-extension';
-
+// eslint-disable-next-line import/prefer-default-export
 export { default as TypeormMock } from './typeorm';

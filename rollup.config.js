@@ -32,7 +32,6 @@ export default {
     'typeorm',
     'class-validator',
     'class-transformer',
-    'typeorm-extension',
     '@lomray/microservice-nodejs-lib',
     '@lomray/microservice-remote-middleware',
     '@lomray/microservices-types',

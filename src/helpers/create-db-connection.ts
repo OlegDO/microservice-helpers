@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { createConnection } from 'typeorm';
 import type { ConnectionOptions } from 'typeorm';
-import { createDatabase } from 'typeorm-extension';
+import createDBIfNotExists from '@helpers/create-db';
 import RemoteConfig from '@services/remote-config';
 
 /**
@@ -24,7 +24,7 @@ const createDbConnection = async (
 
   // Make typeorm config for cli commands
   fs.writeFileSync('ormconfig.json', JSON.stringify(dbOptions));
-  await createDatabase({ ifNotExist: true, characterSet: 'UTF8' }, dbOptions);
+  await createDBIfNotExists(dbOptions);
 
   return createConnection(dbOptions);
 };

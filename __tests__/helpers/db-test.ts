@@ -4,14 +4,14 @@ import rewiremock from 'rewiremock';
 import sinon from 'sinon';
 import type { ConnectionOptions } from 'typeorm';
 import type OriginalCreateDbConnection from '@helpers/create-db-connection';
-import { TypeormMock, TypeormExtensionMock } from '@mocks/index';
+import { TypeormMock } from '@mocks/index';
 import RemoteConfig from '@services/remote-config';
 
 const { default: CreateDbConnection } = rewiremock.proxy<{
   default: typeof OriginalCreateDbConnection;
 }>(() => require('@helpers/create-db-connection'), {
   typeorm: TypeormMock.mock,
-  'typeorm-extension': TypeormExtensionMock.mock,
+  // '@helpers/create-db': TypeormExtensionMock.mock,
 });
 
 describe('helpers/create-db-connection', () => {
@@ -20,7 +20,6 @@ describe('helpers/create-db-connection', () => {
 
   beforeEach(() => {
     TypeormMock.sandbox.reset();
-    TypeormExtensionMock.sandbox.resetHistory();
   });
 
   afterEach(() => {
@@ -33,8 +32,7 @@ describe('helpers/create-db-connection', () => {
     await CreateDbConnection(options, false);
 
     expect(writeFileSyncStub).to.calledOnceWith('ormconfig.json', JSON.stringify(options));
-    expect(TypeormExtensionMock.stubs.createDatabase).to.calledOnce;
-    expect(TypeormMock.stubs.createConnection).to.calledOnce;
+    expect(TypeormMock.stubs.createConnection).to.calledTwice;
   });
 
   it('should correctly create db connection with remote config', async () => {
@@ -48,7 +46,6 @@ describe('helpers/create-db-connection', () => {
       'ormconfig.json',
       JSON.stringify({ ...options, host: 'localhost-test' }),
     );
-    expect(TypeormExtensionMock.stubs.createDatabase).to.calledOnce;
-    expect(TypeormMock.stubs.createConnection).to.calledOnce;
+    expect(TypeormMock.stubs.createConnection).to.calledTwice;
   });
 });
