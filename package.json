@@ -37,7 +37,7 @@
     "@lomray/microservice-remote-middleware": "^1.8.1",
     "@lomray/microservices-client-api": "^2.15.1",
     "@lomray/microservices-types": "^1.12.1",
-    "@lomray/typeorm-json-query": "^2.5.2",
+    "@lomray/typeorm-json-query": "^2.5.3",
     "@opentelemetry/api": "^1.4.1",
     "@opentelemetry/exporter-metrics-otlp-http": "^0.39.1",
     "@opentelemetry/exporter-trace-otlp-http": "^0.39.1",
@@ -105,5 +105,10 @@
   "peerDependencies": {
     "lodash": "^4.17.21",
     "tslib": "^2.5.0"
+  },
+  "overrides": {
+    "typeorm": {
+      "xml2js": "0.5.0"
+    }
   }
 }
