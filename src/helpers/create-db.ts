@@ -5,7 +5,12 @@ import { createConnection } from 'typeorm';
  * Create DB if not exist
  */
 const createDbIfNotExists = async ({ database, ...options }: ConnectionOptions): Promise<void> => {
-  const connection = await createConnection(options as ConnectionOptions);
+  const connection = await createConnection({
+    ...options,
+    migrationsRun: false,
+    synchronize: false,
+    logging: false,
+  } as ConnectionOptions);
   const result = await connection.manager.query(
     `SELECT * FROM pg_database WHERE lower(datname) = lower('${database as string}');`,
   );
