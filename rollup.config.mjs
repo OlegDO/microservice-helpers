@@ -23,7 +23,7 @@ export default {
     exports: 'auto',
   },
   external: [
-    'rewiremock',
+    'rewiremock/node',
     'sinon',
     'winston',
     'firebase-admin',

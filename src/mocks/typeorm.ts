@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-import rewiremock from 'rewiremock';
+import rewiremock from 'rewiremock/node';
 import sinon from 'sinon';
 import type { SelectQueryBuilder } from 'typeorm';
 import { getConnectionManager, EntityManager } from 'typeorm';
