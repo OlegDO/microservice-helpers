@@ -118,12 +118,9 @@ fakeConnection.findMetadata = function (target) {
 const queryBuilderUpdateMock = () =>
   ({
     execute: { affected: 0, generatedMaps: [] },
-  } as const);
+  }) as const;
 
-const queryBuilderDeleteMock = () =>
-  ({
-    execute: { affected: 0, generatedMaps: [] },
-  } as const);
+const queryBuilderDeleteMock = () => queryBuilderUpdateMock();
 
 const queryBuilderMock = () =>
   ({
@@ -136,7 +133,7 @@ const queryBuilderMock = () =>
     getRawOne: {},
     insert: { identifiers: [], generatedMaps: [] },
     execute: {},
-  } as const);
+  }) as const;
 
 const queryBuilder = Object.entries(queryBuilderMock()).reduce(
   (res, [method, value]) => ({ ...res, [method]: sandbox.stub().resolves(value) }),
