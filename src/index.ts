@@ -46,6 +46,10 @@ export type { ILokiTransportOptions } from '@services/log';
 
 export { default as RemoteConfig } from '@services/remote-config';
 
+export { default as Batch } from '@services/batch';
+
+export type { IBatchFindOptions } from '@services/batch';
+
 export { default as Api } from '@services/api';
 
 export type { IApiParams } from '@services/api';
