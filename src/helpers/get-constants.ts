@@ -54,6 +54,7 @@ const GetConstants = ({
           USERNAME: process.env.DB_USERNAME || 'postgres',
           PASSWORD: process.env.DB_PASSWORD || 'example',
           DATABASE: process.env.DB_DATABASE || `ms-${process.env.MS_NAME || msNameDefault}`,
+          IS_SSL_DISABLE: Boolean(Number(process.env.DB_SSL_DISABLE ?? 1)),
           IS_FROM_CONFIG_MS: Boolean(Number(process.env.DB_FROM_CONFIG_MS ?? 1)),
         },
       }
