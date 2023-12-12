@@ -107,6 +107,25 @@ describe('services/endpoint', () => {
       expect(result).to.deep.equal({ ...countResult(), payloadParam: 1 });
     });
 
+    it('should correctly build default params with distinct: count', async () => {
+      // return typeorm from handler
+      handler.callsFake((query) => query);
+
+      const result = await countHandler(
+        {
+          query: {
+            distinct: 'param',
+          },
+        },
+        endpointOptions,
+      );
+      const [queryBuilder, params] = defaultHandlerStub.firstCall.args;
+
+      expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
+      expect(params?.distinct).to.be.equal('param');
+      expect(result).to.deep.equal({ ...countResult() });
+    });
+
     it('handler - should return count entities without removed: default handler', async () => {
       defaultHandlerStub.restore();
 
@@ -123,6 +142,21 @@ describe('services/endpoint', () => {
 
       expect(withDeletedSpy).to.be.calledOnce;
       expect(TypeormMock.queryBuilder.getCount).to.be.calledOnce;
+      expect(result).to.deep.equal({ count: 0 });
+    });
+
+    it('handler - should return raw count entities', async () => {
+      const qb = repository.createQueryBuilder();
+      const result = await Endpoint.defaultHandler.count(qb, { distinct: 'param' });
+
+      const [query, params] = qb.getQueryAndParameters();
+
+      expect(query).to.equal(
+        'SELECT COUNT(DISTINCT "param")::integer AS "count" FROM "test_entity" "TestEntity"',
+      );
+      expect(params).to.deep.equal([]);
+      expect(TypeormMock.queryBuilder.getCount).to.be.not.called;
+      expect(TypeormMock.queryBuilder.getRawOne).to.be.calledOnce;
       expect(result).to.deep.equal({ count: 0 });
     });
 
@@ -566,6 +600,17 @@ describe('services/endpoint', () => {
       expect(result).to.deep.equal({ entity });
     });
 
+    it('should run default view handler with query builder and handle has removed: typeorm case', async () => {
+      const viewWithDefaultHandler = Endpoint.view?.(() => ({ repository }));
+
+      const result = await viewWithDefaultHandler({ query: {}, hasRemoved: true }, endpointOptions);
+      const [queryBuilder, params] = defaultHandlerStub.firstCall.args;
+
+      expect(queryBuilder).to.be.instanceof(SelectQueryBuilder);
+      expect(params?.hasRemoved).to.be.ok;
+      expect(result).to.deep.equal({ entity });
+    });
+
     it('should run default view handler with query builder: query builder case', async () => {
       handler.resetHistory();
       // return query builder from handler
@@ -602,6 +647,20 @@ describe('services/endpoint', () => {
       const result = Endpoint.defaultHandler.view(qb);
 
       expect(await waitResult(result)).to.throw(emptyConditionMessage);
+    });
+
+    it('handler - should return view entity with removed: default handler', async () => {
+      defaultHandlerStub.restore();
+      TypeormMock.queryBuilder.getMany.resolves([entity]);
+
+      const qb = repository.createQueryBuilder().where('id = 1');
+      const withDeletedSpy = sandbox.spy(qb, 'withDeleted');
+
+      const result = await Endpoint.defaultHandler.view(qb, { hasRemoved: true });
+
+      expect(withDeletedSpy).to.be.calledOnce;
+      expect(TypeormMock.queryBuilder.getMany).to.be.calledOnce;
+      expect(result).to.deep.equal({ entity });
     });
 
     it('handler - should return cached result', async () => {

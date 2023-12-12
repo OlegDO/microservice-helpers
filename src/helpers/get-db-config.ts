@@ -13,7 +13,7 @@ const getDbConfig = (
   const migrationPath = IS_BUILD ? 'lib/' : '';
   const packagePath = `node_modules/${extendPackageName || ''}`;
 
-  const { URL, HOST, PORT, USERNAME, PASSWORD, DATABASE } = DB;
+  const { URL, HOST, PORT, USERNAME, PASSWORD, DATABASE, IS_REJECT_UNAUTHORIZED } = DB;
 
   const entities = [];
   const subscribers = [];
@@ -41,6 +41,7 @@ const getDbConfig = (
           username: USERNAME,
           password: PASSWORD,
           database: DATABASE,
+          ...(IS_REJECT_UNAUTHORIZED ? { ssl: { rejectUnauthorized: false } } : {}),
         }),
     entities,
     subscribers,
