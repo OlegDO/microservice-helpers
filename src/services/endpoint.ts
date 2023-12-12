@@ -104,6 +104,27 @@ export type IRequestPayload<TEntity, TPayload> = TPayload & {
   };
 };
 
+export interface IGetQueryParams {
+  hasRemoved?: boolean; // Default false
+  cache?: number; // Default 0
+  [key: string]: any;
+}
+
+export interface IGetQueryCountParams extends IGetQueryParams {
+  distinct?: string;
+}
+
+export interface IGetQueryListParams extends Pick<IGetQueryParams, 'hasRemoved'> {
+  isWithCount?: boolean; // Default false
+  isParallel?: boolean; // Default false
+  cache?: {
+    listCache?: number; // Default 0
+    countCache?: number; // Default 0
+  };
+}
+
+export interface IGetQueryViewParams extends IGetQueryParams {}
+
 class CountRequestParams<TEntity> {
   @IsObject()
   @IsUndefinable()
@@ -576,18 +597,25 @@ const defaultHandler = <TEntity>(query: TypeormJsonQuery<TEntity>): TypeormJsonQ
  */
 const getQueryCount = async <TEntity>(
   query: SelectQueryBuilder<TEntity>,
-  { hasRemoved = false, cache = 0 } = {},
+  { hasRemoved = false, cache = 0, distinct }: IGetQueryCountParams = {},
 ): Promise<CountOutputParams> => {
   if (hasRemoved) {
     query.withDeleted();
   }
 
+  // Apply distinct select
+  if (distinct) {
+    query.select(`COUNT(DISTINCT "${distinct}")::integer`, 'count');
+  }
+
   if (cache) {
-    query.cache(getCrudCacheKey(query, CACHE_KEYS.count, { hasOnlyWhere: true }), cache);
+    // Disable is only where condition
+    query.cache(getCrudCacheKey(query, CACHE_KEYS.count, { hasOnlyWhere: !distinct }), cache);
   }
 
   return {
-    count: await query.getCount(),
+    // Returns raw count if distinct enabled
+    count: distinct ? (await query.getRawOne())?.count || 0 : await query.getCount(),
   };
 };
 
@@ -601,7 +629,7 @@ const getQueryList = async <TEntity>(
     hasRemoved = false,
     isParallel = false,
     cache: { listCache = 0, countCache = 0 } = {},
-  } = {},
+  }: IGetQueryListParams = {},
 ): Promise<ListOutputParams<TEntity>> => {
   if (hasRemoved) {
     query.withDeleted();
@@ -1141,8 +1169,13 @@ class Endpoint {
           ...queryOptions,
         });
         const result = await handler(typeQuery, params, options);
-        const { hasRemoved } = params;
-        const defaultParams = { hasRemoved, cache };
+        const { hasRemoved, query: iJsonQuery } = params;
+        const defaultParams = {
+          hasRemoved,
+          cache,
+          // Check and cast to string from TEntity field
+          ...(typeof iJsonQuery?.distinct === 'string' ? { distinct: iJsonQuery.distinct } : {}),
+        };
 
         if (result instanceof TypeormJsonQuery) {
           return Endpoint.defaultHandler.count(result.toQuery(), defaultParams);
